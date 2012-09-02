@@ -1,0 +1,4 @@
+help sub-command
+
+	# get short or detailed help on each command
+	help [<command>]
