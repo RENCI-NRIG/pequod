@@ -1,0 +1,56 @@
+Some sample commands
+
+help sub-command
+
+	# get short or detailed help on each command
+	help [<command>]
+
+show sub-command
+
+	# show configured containers
+	show containers
+
+	# show actors in containers
+	show [ams | sms | brokers | actors] [for <container url>] [active| all]
+	
+	# show clients
+	show clients for <am name>|<broker name>
+	
+	# show users
+	show users [for <container url>]
+	
+	# show last errors
+	show errors [for <container url>]
+	
+	# show resources exported by am
+	show resources [exported] [for <am name>]
+	
+	# show certificate of the contaienr
+	show certs [for <container url>]
+	
+	# show packages
+	show packages [for <container url>]
+	
+configure sub-command
+
+	# configure user password (update existing user record)
+	configure user <username> password <password [for <container url>]
+	
+	#configure container 
+	configure container <filename.xml>
+	
+	# install/uninstall/upgrade package
+	configure package for <container url> [install|uninstall|upgrade] [<file name>] package [<package id>]
+	
+	# configure shell verbosity level
+	configure verbose [1-10]
+	
+manage sub-command
+
+	# delegate/undelegate resources
+	
+	
+	
+
+	
+

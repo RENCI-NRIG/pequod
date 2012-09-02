@@ -1,0 +1,25 @@
+show sub-command
+
+	# show configured containers
+	show containers
+
+	# show actors in containers
+	show [ams | sms | brokers | actors] [for <container url>] [all]
+	
+	# show clients
+	show clients for <am name>|<broker name>
+	
+	# show users
+	show users [for <container url>]
+	
+	# show last errors
+	show errors [for <container url>]
+	
+	# show resources exported by am
+	show exportedResources [for <am name>]
+	
+	# show certificate of the contaienr
+	show certs [for <container url>]
+	
+	# show packages
+	show packages [for <container url>]
