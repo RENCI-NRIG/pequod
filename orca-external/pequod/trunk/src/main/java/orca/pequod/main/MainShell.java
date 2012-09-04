@@ -1,5 +1,7 @@
 package orca.pequod.main;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -121,6 +123,15 @@ public class MainShell {
 			System.err.println("Unable to create ConsoleReader, exiting.");
 			System.exit(1);
 		}
+		
+		console.addTriggeredAction('?', new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("Help is coming.");
+			}
+			
+		});
 	}
 	
 	private static MainShell instance = new MainShell();
@@ -178,7 +189,7 @@ public class MainShell {
 	protected void shutdownActions() {
 		try {
 			System.out.println("\nLogging out of containers");
-			cc.finalize();
+			cc.shutdown();
 			System.out.print("Shutting down commands ");
 			for (Entry<String, ICommand> cmd: commands.entrySet()) {
 				System.out.print(cmd.getKey() + " ");
