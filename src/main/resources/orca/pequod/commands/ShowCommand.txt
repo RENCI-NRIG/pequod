@@ -4,10 +4,16 @@ show sub-command
 	show containers
 
 	# show actors in containers
-	show [ams | sms | brokers | actors] [for <container url>] [all]
+	show [ams|sms|brokers|actors] [for <container url>] [all]
 	
 	# show clients
 	show clients for <am name>|<broker name>
+	
+	# show slices
+	show slices for <actor name>
+	
+	# show slice properties
+	show sliceProperties for <slice name> actor <actor name> [local|config|request|resource|all]
 	
 	# show users
 	show users [for <container url>]

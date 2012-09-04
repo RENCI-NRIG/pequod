@@ -8,5 +8,5 @@ import java.util.Scanner;
  *
  */
 public interface SubCommand {
-	String parse(Scanner l);
+	String parse(Scanner l, String last);
 }

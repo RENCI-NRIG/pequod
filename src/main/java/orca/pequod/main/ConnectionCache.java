@@ -2,15 +2,22 @@ package orca.pequod.main;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import orca.manage.IOrcaActor;
+import orca.manage.IOrcaAuthority;
+import orca.manage.IOrcaBroker;
 import orca.manage.IOrcaContainer;
+import orca.manage.IOrcaServiceManager;
 import orca.manage.Orca;
 import orca.manage.OrcaError;
 import orca.manage.beans.ActorMng;
 import orca.manage.beans.ResultMng;
+import orca.util.ID;
 
 /** takes care of maintaining connections
  * to different containers
@@ -19,10 +26,22 @@ import orca.manage.beans.ResultMng;
  */
 public class ConnectionCache {
 	protected Map<String, ConnectionState> activeConnections;
-	protected List<ActorMng> actors;
+	protected Map<String, ActorState> activeActors;
 	protected String username, password;
 	protected boolean inError = false;
 	protected String lastError = null;
+	
+	static class ActorState {
+		ActorMng actor;
+		ConnectionState proxy;
+		Constants.ActorType type;
+		
+		ActorState(ActorMng a, ConnectionState cs) {
+			actor = a;
+			proxy = cs;
+			type = Constants.ActorType.getType(a.getType());
+		}
+	}
 	
 	static class ConnectionState {
 		private static final String SOAP_URL_HEADER = "soap://";
@@ -75,7 +94,12 @@ public class ConnectionCache {
 		// get the names of actors
 		
 		if (!cs.inError) {
-			actors.addAll(cs.proxy.getActors());
+			for (ActorMng a: cs.proxy.getActors()) {
+				// insert under name and guid
+				ActorState as = new ActorState(a, cs);
+				activeActors.put(a.getName(), as);
+				activeActors.put(a.getID(), as);
+			}
 		}
 	}
 	/**
@@ -88,7 +112,7 @@ public class ConnectionCache {
 	public ConnectionCache(List<String> urls, String username, String password) {
 		this.username = username;
 		this.password = password;
-		this.actors = new LinkedList<ActorMng>();
+		this.activeActors = new HashMap<String, ActorState>();
 		
 		activeConnections = new HashMap<String, ConnectionState>();
 		
@@ -175,7 +199,131 @@ public class ConnectionCache {
 	 * @return
 	 */
 	public Collection<ActorMng> getActiveActors() {
-		return new LinkedList<ActorMng>(actors);
+		Set<ActorMng> ret = new HashSet<ActorMng>();
+		for(ActorState as: activeActors.values()) {
+			ret.add(as.actor);
+		}
+		return ret;
+	}
+	
+	/**
+	 * get active actors by type
+	 * @param t
+	 * @return
+	 */
+	public Collection<ActorMng> getActiveActors(Constants.ActorType t) {
+		Set<ActorMng> ret = new HashSet<ActorMng>();
+		for(ActorState as: activeActors.values()) {
+			if ((t == Constants.ActorType.ACTOR) ||
+					(t == Constants.ActorType.UNKNOWN))
+				ret.add(as.actor);
+			else 
+				if (as.type == t)
+					ret.add(as.actor);
+		}
+		return ret;
+	}
+	
+	/**
+	 * Get actor by its name or GUID
+	 * @param nameOrGuid
+	 * @return
+	 */
+	public ActorMng getActor(String nameOrGuid) {
+		return activeActors.get(nameOrGuid).actor;
+	}
+	
+	/**
+	 * Get IOrcaActor for this name or guid
+	 * @param nameOrGuid
+	 * @return
+	 */
+	public IOrcaActor getOrcaActor(String nameOrGuid) {
+		ActorState as = activeActors.get(nameOrGuid);
+		
+		if (as == null)
+			return null;
+		
+		if (as.proxy.inError)
+			return null;
+
+		return as.proxy.proxy.getActor(new ID(as.actor.getID()));
+	}
+	
+	/**
+	 * Get authority by name or guid (or null)
+	 * @param nameOrGuid
+	 */
+	public IOrcaAuthority getAuthority(String nameOrGuid) {
+		ActorState as = activeActors.get(nameOrGuid);
+		
+		if (as == null)
+			return null;
+		
+		if (as.proxy.inError)
+			return null;
+		
+		if (as.type != Constants.ActorType.AM)
+			return null;
+		
+		return as.proxy.proxy.getAuthority(new ID(as.actor.getID()));
+	}
+	
+	/**
+	 * Get broker by name or guid (or null)
+	 * @param nameOrGuid
+	 * @return
+	 */
+	public IOrcaBroker getBroker(String nameOrGuid) {
+		ActorState as = activeActors.get(nameOrGuid);
+		
+		if (as == null)
+			return null;
+		
+		if (as.proxy.inError)
+			return null;
+		
+		if (as.type != Constants.ActorType.BROKER)
+			return null;
+		
+		return as.proxy.proxy.getBroker(new ID(as.actor.getID()));
+	}
+	
+	/**
+	 * Get service manager by name or guid (or null)
+	 * @param nameOrGuid
+	 * @return
+	 */
+	public IOrcaServiceManager getServiceManager(String nameOrGuid) {
+		ActorState as = activeActors.get(nameOrGuid);
+		
+		if (as == null)
+			return null;
+		
+		if (as.proxy.inError)
+			return null;
+		
+		if (as.type != Constants.ActorType.SM)
+			return null;
+		
+		return as.proxy.proxy.getServiceManager(new ID(as.actor.getID()));
+	}
+	
+	/**
+	 * Get URL of the container for this actor
+	 * @param nameOrGuid
+	 * @return
+	 */
+	public String getActorContainer(String nameOrGuid) {
+		ActorState as = activeActors.get(nameOrGuid);
+		
+		if (as == null)
+			return null;
+		
+		if (as.proxy == null)
+			return null;
+		
+		return as.proxy.url;
 	}
 	
 	/**
@@ -217,15 +365,19 @@ public class ConnectionCache {
 		return null;
 	}
 	
-	/**
-	 * Cleanly logout from all containers
-	 */
-	protected void finalize() {
+	public void shutdown() {
 		// logout from all containers
 		for (String s: activeConnections.keySet()) {
 			ConnectionState cs = activeConnections.get(s);
 			if (cs.proxy != null)
 				cs.proxy.logout();
 		}
+	}
+	
+	/**
+	 * Cleanly logout from all containers
+	 */
+	protected void finalize() {
+		shutdown();
 	}
 }
