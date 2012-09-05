@@ -31,6 +31,12 @@ public class ConnectionCache {
 	protected boolean inError = false;
 	protected String lastError = null;
 	
+	// current settings
+	protected String container;
+	protected String actor;
+	protected String slice;
+	protected String reservation;
+	
 	static class ActorState {
 		ActorMng actor;
 		ConnectionState proxy;
@@ -363,6 +369,35 @@ public class ConnectionCache {
 			return cs.proxy;
 		}
 		return null;
+	}
+	
+	/**
+	 * Getters setters for current (container, slice, actor, reservation)
+	 */
+	
+	public void setCurrentContainer(String url) {
+		container = url;
+	}
+	public String getCurrentContainer() {
+		return container;
+	}
+	public void setCurrentActor(String actor) {
+		this.actor = actor;
+	}
+	public String getCurrentActor() {
+		return actor;
+	}
+	public void setCurrentSlice(String slice) {
+		this.slice = slice;
+	}
+	public String getCurrentSlice() {
+		return slice;
+	}
+	public void setCurrentReservation(String res) {
+		reservation = res;
+	}
+	public String getCurrentReservation() {
+		return reservation;
 	}
 	
 	public void shutdown() {

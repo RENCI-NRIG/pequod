@@ -1,0 +1,4 @@
+set subcommand
+
+	# current - set current container, actor, slice or reservation
+	set current <container|actor|slice|reservation> <container url|actor name|slice|reservation>
