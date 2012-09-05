@@ -58,4 +58,104 @@ public class Constants {
 			return UNKNOWN;
 		}
 	}
+	
+	public enum PropertyType {
+		LOCAL("local"),
+		CONFIGURATION("config"),
+		REQUEST("request"),
+		RESOURCE("resource"),
+		ALL("all"),
+		UNKNOWN("unknown");
+		
+		String name;
+		PropertyType(String n) {
+			name = n;
+		}
+
+		public boolean propertyThisType(String o) {
+			return name.equals(o);
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public static PropertyType getType(String o) {
+			if (LOCAL.propertyThisType(o))
+				return LOCAL;
+			if (CONFIGURATION.propertyThisType(o))
+				return CONFIGURATION;
+			if (REQUEST.propertyThisType(o))
+				return REQUEST;
+			if (RESOURCE.propertyThisType(o))
+				return RESOURCE;
+			if (ALL.propertyThisType(o))
+				return ALL;
+			return UNKNOWN;
+		}
+	}
+	
+	public enum CurrentType {
+		CONTAINER("container"),
+		ACTOR("actor"),
+		SLICE("slice"),
+		RESERVATION("reservation"),
+		UNKNOWN("unknown");
+		
+		String name;
+		CurrentType(String n) {
+			name = n;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public boolean currentThisType(String o) {
+			return name.equals(o);
+		}
+		
+		public static CurrentType getType(String o) {
+			if (CONTAINER.currentThisType(o))
+				return CONTAINER;
+			if (ACTOR.currentThisType(o))
+				return ACTOR;
+			if (SLICE.currentThisType(o))
+				return SLICE;
+			if (RESERVATION.currentThisType(o))
+				return RESERVATION;
+			return UNKNOWN;
+		}
+	}
+	
+	public enum ReservationState {
+		ACTIVE("active"),
+		CLOSED("closed"),
+		FAILED("failed"),
+		ALL("all"),
+		UNKNOWN("unknown");
+		
+		String name;
+		ReservationState(String s) {
+			name = s;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public boolean stateThisType(String o) {
+			return name.equals(o);
+		}
+		
+		public static ReservationState getType(String o) {
+			if (ACTIVE.stateThisType(o))
+				return ACTIVE;
+			if (CLOSED.stateThisType(o))
+				return CLOSED;
+			if (FAILED.stateThisType(o))
+				return FAILED;
+			return UNKNOWN;
+		}
+	}
 }

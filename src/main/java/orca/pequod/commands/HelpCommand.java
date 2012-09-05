@@ -23,10 +23,6 @@ public class HelpCommand extends CommandHelper implements ICommand{
 	public HelpCommand() {
 
 	}
-	
-	public String getCommandHelp() {
-		return readHelpFile();
-	}
 
 	public String getCommandName() {
 		return COMMAND_NAME;
@@ -54,9 +50,9 @@ public class HelpCommand extends CommandHelper implements ICommand{
 				ICommand cmd = MainShell.getInstance().getCommands().get(scanner.next());
 				return cmd.getCommandHelp();
 			}
-			return "Syntax error.\n" + getCommandHelp();
+			return syntaxError();
 		} catch (NoSuchElementException e) {
-			return "Syntax error.\n" + getCommandHelp();
+			return syntaxError();
 		}
 	}
 

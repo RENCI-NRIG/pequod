@@ -4,28 +4,37 @@ show sub-command
 	show containers
 
 	# show actors in containers
-	show [ams|sms|brokers|actors] [for <container url>] [all]
+	show <ams|sms|brokers|actors> [for <container url>|current|all]
 	
 	# show clients
-	show clients for <am name>|<broker name>
+	show clients for <am name>|<broker name>|current
 	
 	# show slices
-	show slices for <actor name>
+	show slices for <actor name>|current
 	
 	# show slice properties
-	show sliceProperties for <slice name> actor <actor name> [local|config|request|resource|all]
+	show sliceProperties for <slice name>|current actor <actor name>|current [type <local|config|request|resource|all>]
+	
+	# show reservations
+	show reservations for <slice name>|current|all actor <actor name>|current [state <closed|active>]
+	
+	# show reservation properties
+	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource|all>]
 	
 	# show users
-	show users [for <container url>]
+	show users [for <container url>|current|all]
 	
-	# show last errors
-	show errors [for <container url>]
+	# show last errors (if current or all - for containers)
+	show errors [for <container url|actor name>|current|all]
 	
-	# show resources exported by am
-	show exportedResources [for <am name>]
+	# show resources exported by am(s)
+	show exportedResources [for <am name>|current|all]
 	
-	# show certificate of the contaienr
-	show certs [for <container url>]
+	# show certificate of the container
+	show certs [for <container url>|current|all]
 	
 	# show packages
-	show packages [for <container url>]
+	show packages [for <container url>|current|all]
+	
+	# show current setting
+	show current for <container|actor|slice|reservation>
