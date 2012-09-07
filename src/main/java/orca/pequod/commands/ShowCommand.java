@@ -22,10 +22,12 @@ import orca.manage.beans.ActorMng;
 import orca.manage.beans.ClientMng;
 import orca.manage.beans.PropertiesMng;
 import orca.manage.beans.PropertyMng;
+import orca.manage.beans.ReservationMng;
 import orca.manage.beans.SliceMng;
 import orca.manage.beans.UserMng;
 import orca.pequod.main.Constants;
 import orca.pequod.main.MainShell;
+import orca.shirako.common.SliceID;
 
 public class ShowCommand extends CommandHelper implements ICommand {
 	public static String COMMAND_NAME="show";
@@ -51,17 +53,20 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			public String parse(Scanner l, String last) {
 				String ret = "";
 				// return a list of containers and their status
+				List<String> showLast = new LinkedList<String>();
 				for (String c: MainShell.getInstance().getConnectionCache().getContainers()) {
+					showLast.add(c);
 					ret += "  " + c + "\t" + (MainShell.getInstance().getConnectionCache().isConnectionInError(c) ?
 							MainShell.getInstance().getConnectionCache().getConnectionError(c) : "OK") + "\n";
 				}
+				MainShell.getInstance().getConnectionCache().setLastShowContainers(showLast);
 				return ret;
 			}
 		});
 		
 		subcommands.put("users", new SubCommand() {
 			public String parse(Scanner l, String last) {
-				// either all known users in all containers, or just one container
+				// either all known users in < containers, or just one container
 				try {
 					if (!"for".equals(l.next())) {
 						return null;
@@ -126,7 +131,10 @@ public class ShowCommand extends CommandHelper implements ICommand {
 						return null;
 					}
 					try {
-						return getSlices(l.next());
+						List<SliceMng> lm = new LinkedList<SliceMng>();
+						String ret = getSlices(l.next(), lm);
+						MainShell.getInstance().getConnectionCache().setLastShowSlices(lm);
+						return ret;
 					} catch (NoSuchElementException e) {
 						return null;
 					}
@@ -207,17 +215,22 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				try {
 					if (!"for".equals(l.next()))
 						return null;
-					String sliceName = l.next();
+					String sliceId = l.next();
 					if (!"actor".equals(l.next()))
 						return null;
 					String actorName = l.next();
 					
+					List<ReservationMng> r = new LinkedList<ReservationMng>();
 					try {
 						if (!"state".equals(l.next()))
 							return null;
-						return getReservations(sliceName, actorName, Constants.ReservationState.getType(l.next()));
+						String ret = getReservations(sliceId, actorName, Constants.ReservationState.getType(l.next()), r);
+						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
+						return ret;
 					} catch (NoSuchElementException e) {
-						return getReservations(sliceName, actorName, Constants.ReservationState.ALL);
+						String ret = getReservations(sliceId, actorName, Constants.ReservationState.ALL, r);
+						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
+						return ret;
 					}
 				} catch (NoSuchElementException e) {
 					return null;
@@ -239,18 +252,23 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		@Override
 		public String parse(Scanner l, String last) {
 			Constants.ActorType tp = Constants.ActorType.getType(last);
-			
+
+			List<ActorMng> am = new LinkedList<ActorMng>();
 			try {
 				if (!"for".equals(l.next())) {
 					return null;
 				}
 				try {
-					return getActorsByType(tp, l.next());
+					String ret = getActorsByType(tp, l.next(), am);
+					MainShell.getInstance().getConnectionCache().setLastShowActors(am);
+					return ret;
 				} catch (NoSuchElementException e) {
 					return null;
 				}
 			} catch (NoSuchElementException e) {
-				return getActorsByType(tp);
+				String ret = getActorsByType(tp, am);
+				MainShell.getInstance().getConnectionCache().setLastShowActors(am);
+				return ret;
 			}
 		}
 	}
@@ -336,10 +354,17 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		String ret = "";
 		// NOTE: containers cannot be called current or all, so we're ok here	
 		if (CURRENT.equals(url)) { 
-			if (MainShell.getInstance().getConnectionCache().getCurrentContainer() != null)
-				url = MainShell.getInstance().getConnectionCache().getCurrentContainer();
+			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
+				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
+					if (!CURRENT.equals(u)) {
+						ret += "Container " + u + "\n";
+						ret += getUsers(u);
+					}
+				}
+				return ret;
+			}
 			else
-				return "ERROR: Current container not set";
+				return "ERROR: Current containers not set";
 		}
 		
 		IOrcaContainer proxy = MainShell.getInstance().getConnectionCache().getContainer(url);
@@ -362,12 +387,20 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	}
 	
 	private static String getCerts(String url) {
+		String ret = "";
 		// NOTE: containers cannot be called current or all, so we're ok here	
 		if (CURRENT.equals(url)) { 
-			if (MainShell.getInstance().getConnectionCache().getCurrentContainer() != null)
-				url = MainShell.getInstance().getConnectionCache().getCurrentContainer();
+			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
+				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
+					if (!CURRENT.equals(u)) {
+						ret += "Container " + u + "\n";
+						ret += getCerts(u);
+					}
+				}
+				return ret;
+			}
 			else
-				return "ERROR: Current container not set";
+				return "ERROR: Current containers not set";
 		}
 		
 		IOrcaContainer proxy = MainShell.getInstance().getConnectionCache().getContainer(url);
@@ -382,11 +415,11 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @param t
 	 * @return
 	 */
-	private static String getActorsByType(Constants.ActorType t) {
+	private static String getActorsByType(Constants.ActorType t, List<ActorMng> l) {
 		String ret = "";
 		for (String c: MainShell.getInstance().getConnectionCache().getContainers()) {
 			if (!MainShell.getInstance().getConnectionCache().isConnectionInError(c))
-				ret += getActorsByType(t, c);
+				ret += getActorsByType(t, c, l);
 		}
 		return ret;
 	}
@@ -397,18 +430,25 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @param url
 	 * @return
 	 */
-	private static String getActorsByType(Constants.ActorType t, String url) {
-		
-		// NOTE: containers cannot be called current or all, so we're ok here	
+	private static String getActorsByType(Constants.ActorType t, String url, List<ActorMng> l) {
+		String ret = "";
+
 		if (CURRENT.equals(url)) { 
-			if (MainShell.getInstance().getConnectionCache().getCurrentContainer() != null)
-				url = MainShell.getInstance().getConnectionCache().getCurrentContainer();
+			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
+				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
+					if (!CURRENT.equals(u)) {
+						ret += "Container " + u + "\n";
+						ret += getActorsByType(t, u, l);
+					}
+				}
+				return ret;
+			}
 			else
-				return "ERROR: Current container not set";
+				return "ERROR: Current containers not set";
 		}
 		
 		if (ALL.equals(url)) 
-			return getActorsByType(t);
+			return getActorsByType(t, l);
 		
 		IOrcaContainer proxy = MainShell.getInstance().getConnectionCache().getContainer(url);
 		if (proxy == null)
@@ -420,7 +460,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		case BROKER: actors = MainShell.getInstance().getConnectionCache().getActiveActors(Constants.ActorType.BROKER); break;
 		default: actors = MainShell.getInstance().getConnectionCache().getActiveActors(); break;
 		}
-		String ret = "";
+		l.addAll(actors);
 		for (ActorMng a: actors) {
 			ret += a.getName() + "\t" + Constants.ActorType.getType(a.getType()).getName() + 
 			"\t[" + a.getDescription() + "]\t " + 
@@ -437,12 +477,18 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	private static String getClients(String actorName) {
 		String ret = "";
 
-		// NOTE: actor could be named 'current'. Then we're in trouble.
 		if (CURRENT.equals(actorName)) {
-			if (MainShell.getInstance().getConnectionCache().getCurrentActor() != null)
-				actorName = MainShell.getInstance().getConnectionCache().getCurrentActor();
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+					if (!CURRENT.equals(a)) {
+						ret += "Actor " + a + "\n";
+						ret += getClients(a);
+					}
+				}
+				return ret;
+			}
 			else
-				return "ERROR: Current actor not set";
+				return "ERROR: Current actors not set";
 		}
 		
 		List<ClientMng> clients;
@@ -477,22 +523,31 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @param actorName
 	 * @return
 	 */
-	private static String getSlices(String actorName) {
-		// NOTE: actor could be named 'current'. Then we're in trouble.
+	private static String getSlices(String actorName, List<SliceMng> lm) {
+		String ret = "";
 		if (CURRENT.equals(actorName)) {
-			if (MainShell.getInstance().getConnectionCache().getCurrentActor() != null)
-				actorName = MainShell.getInstance().getConnectionCache().getCurrentActor();
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+					if (!CURRENT.equals(a)) {
+						ret += "Actor " + a + "\n";
+						ret += getSlices(a, lm);
+					}
+				}
+				return ret;
+			}
 			else
-				return "ERROR: Current actor not set";
+				return "ERROR: Current actors not set";
 		}
 		
 		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
 		if (actor == null)
 			return "ERROR: This actor does not exist";
 		
-		String ret = "";
 		if (actor.getSlices() == null)
 			return "ERROR: This actor has no slices";
+		
+		lm.addAll(actor.getSlices());
+		
 		for (SliceMng s: actor.getSlices())
 			ret += s.getName() + "\t" + s.getSliceID() + "\t" + (s.getResourceType() != null ? s.getResourceType() : "") + "\n";
 		return ret;
@@ -507,18 +562,29 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	private static String getSliceProperties(String sliceName, String actorName, Constants.PropertyType t) {
 		String ret = "";
 		
-		// NOTE: slice can be named 'current' and we're in trouble
 		if (CURRENT.equals(sliceName)) {
-			if (MainShell.getInstance().getConnectionCache().getCurrentSlice() != null)
-				sliceName = MainShell.getInstance().getConnectionCache().getCurrentSlice();
+			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
+				for (String s: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
+					if (!CURRENT.equals(s)) {
+						ret += "Slice " + s + "\n";
+						ret += getSliceProperties(s, actorName, t);
+					}
+				}
+				return ret;
+			}
 			else
 				return "ERROR: Current slice not set";
 		}
 		
-		// NOTE: actor can be named 'current' and we're in trouble
 		if (CURRENT.equals(actorName)) {
-			if (MainShell.getInstance().getConnectionCache().getCurrentActor() != null)
-				actorName = MainShell.getInstance().getConnectionCache().getCurrentActor();
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+					if (!CURRENT.equals(a)) {
+						ret += getSliceProperties(sliceName, a, t);
+					}
+				}
+				return ret;
+			}
 			else
 				return "ERROR: Current actor not set";
 		}
@@ -539,7 +605,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		PropertiesMng props = null;
 		boolean fired = false;
 		for(SliceMng slice: slices) {
-			if (!slice.getName().equals(sliceName))
+			if ((!slice.getName().equals(sliceName)) && (!slice.getSliceID().toString().equals(sliceName)))
 				continue;
 			fired = true;
 			switch(t) {
@@ -560,17 +626,18 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				props = slice.getLocalProperties();
 				break;
 			case ALL:
-				ret += getSliceProperties(sliceName, actorName, Constants.PropertyType.RESOURCE);
-				if (ret.startsWith("ERROR"))
-					return ret;
-				ret += getSliceProperties(sliceName, actorName, Constants.PropertyType.REQUEST);
-				ret += getSliceProperties(sliceName, actorName, Constants.PropertyType.CONFIGURATION);
-				ret += getSliceProperties(sliceName, actorName, Constants.PropertyType.LOCAL);
+				for (Constants.PropertyType pt: Constants.PropertyType.values()) {
+					if ((!pt.equals(Constants.PropertyType.UNKNOWN)) && 
+							(!pt.equals(Constants.PropertyType.ALL)))
+						ret += getSliceProperties(sliceName, actorName, pt);
+					if (ret.startsWith("ERROR"))
+						return ret;
+				}
 				return ret;
 			}
 		}
 		if (!fired)
-			return "ERROR: No such slice in this actor";
+			return "ERROR: No such slice  in this actor";
 	
 		for (PropertyMng p: props.getProperty()) {
 			ret += p.getName() + "\t" + p.getValue() + "\n";
@@ -585,11 +652,18 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @return
 	 */
 	private static String getContainerError(String url) {
+		String ret = "";
 		// NOTE: containers cannot be called current so we're ok here	
-		
 		if (CURRENT.equals(url)) { 
-			if (MainShell.getInstance().getConnectionCache().getCurrentContainer() != null)
-				url = MainShell.getInstance().getConnectionCache().getCurrentContainer();
+			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
+				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
+					if (!CURRENT.equals(u)) {
+						ret += "Container " + u + "\n";
+						ret += getContainerError(u);
+					}
+				}
+				return ret;
+			}
 			else
 				return "ERROR: Current container not set";
 		}
@@ -601,7 +675,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		
 		OrcaError err = proxy.getLastError();
 		if (err != null)
-			return err.toString();
+			return url + ":\t" + err.toString();
 		else 
 			return "No errors";
 	}
@@ -612,10 +686,17 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @return
 	 */
 	private static String getActorError(String actorName) {
-		// NOTE: actor can be named 'current' and we're in trouble
+		String ret = "";
 		if (CURRENT.equals(actorName)) {
-			if (MainShell.getInstance().getConnectionCache().getCurrentActor() != null)
-				actorName = MainShell.getInstance().getConnectionCache().getCurrentActor();
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+					if (!CURRENT.equals(a)) {
+						ret += "Actor " + a + "\n";
+						ret += getActorError(a);
+					}
+				}
+				return ret;
+			}
 			else
 				return "ERROR: Current actor not set";
 		}
@@ -638,58 +719,118 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @return
 	 */
 	private static String getCurrentSetting(Constants.CurrentType t) {
-		String ret = null;
+		List<String> ret = null;
 		switch(t) {
 		case CONTAINER:
-			ret = MainShell.getInstance().getConnectionCache().getCurrentContainer();
+			ret = MainShell.getInstance().getConnectionCache().getCurrentContainers();
 			break;
 		case ACTOR:
-			ret = MainShell.getInstance().getConnectionCache().getCurrentActor();
+			ret = MainShell.getInstance().getConnectionCache().getCurrentActors();
 			break;
 		case SLICE:
-			ret = MainShell.getInstance().getConnectionCache().getCurrentSlice();
+			ret = MainShell.getInstance().getConnectionCache().getCurrentSliceIds();
 			break;
 		case RESERVATION:
-			ret = MainShell.getInstance().getConnectionCache().getCurrentReservation();
+			ret = MainShell.getInstance().getConnectionCache().getCurrentReservationIds();
 			break;
 		case UNKNOWN:
 			return null;
 		}
 		if (ret == null)
 			return "";
-		return ret;
+		String r = "";
+		for(String s: ret) {
+			r += s + "\n";
+		}
+		return r;
 	}
 	
 	/**
-	 * Get reservations from a particular slice
-	 * @param sliceName
+	 * Get reservations from a particular slice (based on slice ID, not name)
+	 * @param sliceID
 	 * @param actorName
 	 * @param s
 	 * @return
 	 */
-	private static String getReservations(String sliceName, String actorName, Constants.ReservationState s) {
-		// NOTE: slice can be named 'current' and we're in trouble
-		if (CURRENT.equals(sliceName)) {
-			if (MainShell.getInstance().getConnectionCache().getCurrentSlice() != null)
-				sliceName = MainShell.getInstance().getConnectionCache().getCurrentSlice();
-			else
-				return "ERROR: Current slice not set";
-		}
-
-		// NOTE: slice can be named 'all' and we're in trouble
-		if (ALL.equals(sliceName)) {
-			
-		}
+	private static String getReservations(String sliceId, String actorName, Constants.ReservationState s, List<ReservationMng> rm) {
+		String ret = "";
 		
-		// NOTE: actor can be named 'current' and we're in trouble
 		if (CURRENT.equals(actorName)) {
-			if (MainShell.getInstance().getConnectionCache().getCurrentActor() != null)
-				actorName = MainShell.getInstance().getConnectionCache().getCurrentActor();
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null)
+				if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+						if (!CURRENT.equals(a)) {
+							ret += "Actor " + a + "\n";
+							ret += getReservations(sliceId, a, s, rm);
+						}
+					}
+					return ret;
+				}
 			else
 				return "ERROR: Current actor not set";
 		}
+
+		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
+		if (actor == null)
+			return "ERROR: This actor does not exist";
+
+		if (CURRENT.equals(sliceId)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
+				for (String ss: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
+					if (!CURRENT.equals(ss)) {
+						ret += getReservations2(ss, actor, s, rm);
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current slice not set";
+		} else {
 		
+			if (ALL.equals(sliceId)) {
+				if (actor.getSlices() == null)
+					return "ERROR: This actor has no slices";
+				for (SliceMng slice: actor.getSlices()) {
+					// Note the shift from slice name to slice id
+					ret += getReservations2(slice.getSliceID(), actor, s, rm);
+				}
+				return ret;
+			}
+		}
 		
-		return null;
+		return getReservations2(sliceId, actor, s, rm);
+	}
+	
+	/**
+	 * To avoid recursion loops for 'all' slices. Note it uses slice ids, not names
+	 * @param sliceId
+	 * @param actor
+	 * @param s
+	 * @return
+	 */
+	private static String getReservations2(String sliceId, IOrcaActor actor, Constants.ReservationState s, List<ReservationMng> rm) {
+		String ret = "";
+		
+		List<ReservationMng> reservations = null;
+		
+		switch(s) {
+		case UNKNOWN:
+			return "ERROR: Unknown state";
+		case ALL:
+			reservations = actor.getReservations(new SliceID(sliceId));
+			break;
+		default:
+			reservations = actor.getReservations(new SliceID(sliceId), s.getIndex());
+			break;
+		}
+		
+		rm.addAll(reservations);
+		
+		for (ReservationMng res: reservations) {
+			ret += res.getReservationID() + "\t" + actor.getName() + "\t" + res.getSliceID() + "\t" + 
+			Constants.ReservationState.getState(res.getState()) + "\n\t " + res.getNotices() + "\n";
+		}
+		
+		return ret;
 	}
 }

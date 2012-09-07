@@ -16,7 +16,9 @@ import orca.manage.IOrcaServiceManager;
 import orca.manage.Orca;
 import orca.manage.OrcaError;
 import orca.manage.beans.ActorMng;
+import orca.manage.beans.ReservationMng;
 import orca.manage.beans.ResultMng;
+import orca.manage.beans.SliceMng;
 import orca.util.ID;
 
 /** takes care of maintaining connections
@@ -32,10 +34,16 @@ public class ConnectionCache {
 	protected String lastError = null;
 	
 	// current settings
-	protected String container;
-	protected String actor;
-	protected String slice;
-	protected String reservation;
+	protected List<String> currentContainers;
+	protected List<String> currentActors;
+	protected List<String> currentSliceIds;
+	protected List<String> currentReservationIds;
+	
+	// last 'show' settings
+	protected List<String> lastShowContainers;
+	protected List<ActorMng> lastShowActors;
+	protected List<SliceMng> lastShowSlices;
+	protected List<ReservationMng> lastShowReservations;
 	
 	static class ActorState {
 		ActorMng actor;
@@ -372,33 +380,108 @@ public class ConnectionCache {
 	}
 	
 	/**
-	 * Getters setters for current (container, slice, actor, reservation)
+	 * Getters setters for current (containers, slices, actors, reservations)
 	 */
 	
-	public void setCurrentContainer(String url) {
-		container = url;
+	public void setCurrentContainers(List<String> url) {
+		currentContainers = url;
 	}
-	public String getCurrentContainer() {
-		return container;
+	public void setCurrentContainersFromLastShow() {
+		currentContainers = lastShowContainers;
 	}
-	public void setCurrentActor(String actor) {
-		this.actor = actor;
+	public List<String> getCurrentContainers() {
+		return currentContainers;
 	}
-	public String getCurrentActor() {
-		return actor;
+	public void setCurrentActors(List<String> a) {
+		currentActors = a;
 	}
-	public void setCurrentSlice(String slice) {
-		this.slice = slice;
+	public void setCurrentActorsFromLastShow() {
+		if (lastShowActors == null) {
+			currentActors = null;
+			return;
+		}
+		currentActors = new LinkedList<String>();
+		for (ActorMng am: lastShowActors) {
+			currentActors.add(am.getName());
+		}
 	}
-	public String getCurrentSlice() {
-		return slice;
+	public List<String> getCurrentActors() {
+		return currentActors;
 	}
-	public void setCurrentReservation(String res) {
-		reservation = res;
+	public void setCurrentSliceIds(List<String> slices) {
+		currentSliceIds = slices;
 	}
-	public String getCurrentReservation() {
-		return reservation;
+	public void setCurrentSliceIdsFromLastShow() {
+		if (lastShowSlices == null) {
+			currentSliceIds = null;
+			return;
+		}
+		currentSliceIds = new LinkedList<String>();
+		for (SliceMng sm: lastShowSlices) {
+			currentSliceIds.add(sm.getSliceID());
+		}
 	}
+	public List<String> getCurrentSliceIds() {
+		return currentSliceIds;
+	}
+	public void setCurrentReservationIdsFromLastShow() {
+		if (lastShowReservations == null) {
+			currentReservationIds = null;
+			return;
+		}
+		currentReservationIds = new LinkedList<String>();
+		for (ReservationMng rm: lastShowReservations) {
+			currentReservationIds.add(rm.getReservationID());
+			
+		}
+	}
+	public void setCurrentReservationIds(List<String> res) {
+		currentReservationIds = res;
+	}
+	public List<String> getCurrentReservationIds() {
+		return currentReservationIds;
+	}
+	
+	/**
+	 * Getters setters for last show (containers, slices, actors, reservations)
+	 */
+	public void setLastShowContainers(List<String> urls) {
+		lastShowContainers = urls;
+	}
+	public List<String> getLastShowContainers() {
+		return lastShowContainers;
+	}
+	public void setLastShowActors(List<ActorMng> a) {
+		lastShowActors = a;
+	}
+	public List<ActorMng> getLastShowActors() {
+		return lastShowActors;
+	}
+	/**
+	 * Same as getLastShowActors, but returns IOrcaActors instead
+	 * of ActorMng
+	 * @return
+	 */
+	public List<IOrcaActor> getLastShowOrcaActors() {
+		List<IOrcaActor> ret = new LinkedList<IOrcaActor>();
+		for(ActorMng am: lastShowActors) {
+			ret.add(getOrcaActor(am.getName()));
+		}
+		return ret;
+	}
+	public void setLastShowSlices(List<SliceMng> s) {
+		lastShowSlices = s;
+	}
+	public List<SliceMng> getLastShowSlices() {
+		return lastShowSlices;
+	}
+	public void setLastShowReservations(List<ReservationMng> r) {
+		lastShowReservations = r;
+	}
+	public List<ReservationMng> getLastShowReservations() {
+		return lastShowReservations;
+	}
+	
 	
 	public void shutdown() {
 		// logout from all containers

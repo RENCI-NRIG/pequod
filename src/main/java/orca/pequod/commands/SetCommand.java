@@ -19,7 +19,7 @@ import orca.pequod.main.MainShell;
 public class SetCommand extends CommandHelper implements ICommand {
 	public static String COMMAND_NAME="set";
 	private static final List<String> secondField = new LinkedList<String>();
-	private static String[] thirdField = { "container", "actor", "slice", "reservation" };
+	private static String[] thirdField = { "containers", "actors", "slices", "reservations" };
 	private static Map<String, SubCommand> subcommands = new HashMap<String, SubCommand>();
 	
 	static {
@@ -28,12 +28,21 @@ public class SetCommand extends CommandHelper implements ICommand {
 				try {
 					String curType = l.next();
 					try {
-						return setCurrent(l.next(), Constants.CurrentType.getType(curType));
+						// if there is nothing following type, use
+						// results of last matching show command
+						List<String> inputs = new LinkedList<String>();
+						inputs.add(l.next());
+						try {
+							// collect all parameters
+							while(true) 
+								inputs.add(l.next());
+						} catch (NoSuchElementException e) {
+							return setCurrent(inputs, Constants.CurrentType.getType(curType));
+						}
 					} catch (NoSuchElementException e) {
-						return null;
+						return setCurrent(null, Constants.CurrentType.getType(curType));
 					}
 				} catch(NoSuchElementException e) {
-					// all containers
 					return null;
 				}
 			}
@@ -94,20 +103,32 @@ public class SetCommand extends CommandHelper implements ICommand {
 	 * @param t
 	 * @return
 	 */
-	private static String setCurrent(String val, Constants.CurrentType t) {
+	private static String setCurrent(List<String> val, Constants.CurrentType t) {
 		
 		switch(t) {
 		case CONTAINER:
-			MainShell.getInstance().getConnectionCache().setCurrentContainer(val);
+			if (val != null)
+				MainShell.getInstance().getConnectionCache().setCurrentContainers(val);
+			else 
+				MainShell.getInstance().getConnectionCache().setCurrentContainersFromLastShow();
 			break;
 		case ACTOR:
-			MainShell.getInstance().getConnectionCache().setCurrentActor(val);
+			if (val != null)
+				MainShell.getInstance().getConnectionCache().setCurrentActors(val);
+			else
+				MainShell.getInstance().getConnectionCache().setCurrentActorsFromLastShow();
 			break;
 		case SLICE:
-			MainShell.getInstance().getConnectionCache().setCurrentSlice(val);
+			if (val != null)
+				MainShell.getInstance().getConnectionCache().setCurrentSliceIds(val);
+			else
+				MainShell.getInstance().getConnectionCache().setCurrentSliceIdsFromLastShow();
 			break;
 		case RESERVATION:
-			MainShell.getInstance().getConnectionCache().setCurrentReservation(val);
+			if (val != null)
+				MainShell.getInstance().getConnectionCache().setCurrentReservationIds(val);
+			else
+				MainShell.getInstance().getConnectionCache().setCurrentReservationIdsFromLastShow();
 			break;
 		case UNKNOWN:
 			return null;

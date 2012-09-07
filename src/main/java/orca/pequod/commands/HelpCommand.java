@@ -48,11 +48,14 @@ public class HelpCommand extends CommandHelper implements ICommand{
 		try {
 			if (COMMAND_NAME.equals(scanner.next())) {
 				ICommand cmd = MainShell.getInstance().getCommands().get(scanner.next());
-				return cmd.getCommandHelp();
+				if (cmd != null)
+					return cmd.getCommandHelp();
+				else
+					return getCommandHelp();
 			}
 			return syntaxError();
 		} catch (NoSuchElementException e) {
-			return syntaxError();
+			return getCommandHelp();
 		}
 	}
 

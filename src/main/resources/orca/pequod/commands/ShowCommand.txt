@@ -13,13 +13,13 @@ show sub-command
 	show slices for <actor name>|current
 	
 	# show slice properties
-	show sliceProperties for <slice name>|current actor <actor name>|current [type <local|config|request|resource|all>]
+	show sliceProperties for <slice name>|current actor <actor name>|current [type <local|config|request|resource>]
 	
 	# show reservations
-	show reservations for <slice name>|current|all actor <actor name>|current [state <closed|active>]
+	show reservations for <slice name>|current|all actor <actor name>|current [state <closed|active|failed|ticketed|nascent>]
 	
 	# show reservation properties
-	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource|all>]
+	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource>]
 	
 	# show users
 	show users [for <container url>|current|all]
