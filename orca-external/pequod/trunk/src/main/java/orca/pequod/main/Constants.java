@@ -37,25 +37,21 @@ public class Constants {
 		}
 		
 		public static ActorType getType(String o) {
-			if (AM.amThisType(o))
-				return AM;
-			if (SM.amThisType(o))
-				return SM;
-			if (BROKER.amThisType(o))
-				return BROKER;
-			if (ACTOR.amThisType(o))
-				return ACTOR;
+			for (ActorType at: ActorType.values())
+				if (at.amThisType(o)) 
+					return at;
 			return UNKNOWN;
 		}
 		
 		public static ActorType getType(int t) {
-			if (AM.amThisType(t))
-				return AM;
-			if (SM.amThisType(t))
-				return SM;
-			if (BROKER.amThisType(t))
-				return BROKER;
+			for (ActorType at: ActorType.values())
+				if (at.amThisType(t)) 
+					return at;
 			return UNKNOWN;
+		}
+		
+		public String toString() {
+			return name;
 		}
 	}
 	
@@ -81,25 +77,23 @@ public class Constants {
 		}
 		
 		public static PropertyType getType(String o) {
-			if (LOCAL.propertyThisType(o))
-				return LOCAL;
-			if (CONFIGURATION.propertyThisType(o))
-				return CONFIGURATION;
-			if (REQUEST.propertyThisType(o))
-				return REQUEST;
-			if (RESOURCE.propertyThisType(o))
-				return RESOURCE;
-			if (ALL.propertyThisType(o))
-				return ALL;
+			for (PropertyType t: PropertyType.values()) {
+				if (t.propertyThisType(o))
+					return t;
+			}
 			return UNKNOWN;
+		}
+		
+		public String toString() {
+			return name;
 		}
 	}
 	
 	public enum CurrentType {
-		CONTAINER("container"),
-		ACTOR("actor"),
-		SLICE("slice"),
-		RESERVATION("reservation"),
+		CONTAINER("containers"),
+		ACTOR("actors"),
+		SLICE("slices"),
+		RESERVATION("reservations"),
 		UNKNOWN("unknown");
 		
 		String name;
@@ -111,51 +105,72 @@ public class Constants {
 			return name;
 		}
 		
+		// allow plural spelling
 		public boolean currentThisType(String o) {
 			return name.equals(o);
 		}
 		
 		public static CurrentType getType(String o) {
-			if (CONTAINER.currentThisType(o))
-				return CONTAINER;
-			if (ACTOR.currentThisType(o))
-				return ACTOR;
-			if (SLICE.currentThisType(o))
-				return SLICE;
-			if (RESERVATION.currentThisType(o))
-				return RESERVATION;
+			for (CurrentType t: CurrentType.values()) {
+				if (t.currentThisType(o))
+					return t;
+			}
 			return UNKNOWN;
+		}
+		
+		public String toString() {
+			return name;
 		}
 	}
 	
 	public enum ReservationState {
-		ACTIVE("active"),
-		CLOSED("closed"),
-		FAILED("failed"),
-		ALL("all"),
-		UNKNOWN("unknown");
+		NASCENT("nascent", 1),
+		TICKETED("ticketed", 2),
+		ACTIVE("active", 3),
+		ACTIVETICKETED("activeticketed", 4),
+		CLOSED("closed", 5),
+		CLOSEWAIT("closewait", 6),
+		FAILED("failed", 7),
+		ALL("all", 0),
+		UNKNOWN("unknown", -1);
 		
 		String name;
-		ReservationState(String s) {
+		int index;
+		ReservationState(String s, int i) {
 			name = s;
+			index = i;
 		}
 		
 		public String getName() {
 			return name;
 		}
 		
+		public int getIndex() {
+			return index;
+		}
+		
 		public boolean stateThisType(String o) {
 			return name.equals(o);
 		}
 		
-		public static ReservationState getType(String o) {
-			if (ACTIVE.stateThisType(o))
-				return ACTIVE;
-			if (CLOSED.stateThisType(o))
-				return CLOSED;
-			if (FAILED.stateThisType(o))
-				return FAILED;
+		public static ReservationState getState(int index) {
+			for (ReservationState s: ReservationState.values()) {
+				if (index == s.getIndex())
+					return s;
+			}
 			return UNKNOWN;
+		}
+		
+		public static ReservationState getType(String o) {
+			for (ReservationState s: ReservationState.values()) {
+				if (s.stateThisType(o))
+					return s;
+			}
+			return UNKNOWN;
+		}
+		
+		public String toString() {
+			return name;
 		}
 	}
 }

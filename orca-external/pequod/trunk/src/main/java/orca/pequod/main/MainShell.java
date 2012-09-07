@@ -1,7 +1,5 @@
 package orca.pequod.main;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -65,7 +63,6 @@ public class MainShell {
 	protected ICommand subCommand = null;
 	protected ConnectionCache cc;
 	
-	@SuppressWarnings("unchecked")
 	private MainShell() {
 		// construct a list of known commands
 		props = PropertyLoader.loadProperties("orca.pequod.pequod.properties");
@@ -123,15 +120,6 @@ public class MainShell {
 			System.err.println("Unable to create ConsoleReader, exiting.");
 			System.exit(1);
 		}
-		
-		console.addTriggeredAction('?', new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				System.out.println("Help is coming.");
-			}
-			
-		});
 	}
 	
 	private static MainShell instance = new MainShell();
@@ -219,8 +207,12 @@ public class MainShell {
 			
 	}
 	
+	public ICommand getSubCommand() {
+		return subCommand;
+	}
+	
 	protected String readLine() throws IOException {
-
+		
 		String s = console.readLine();
 		if (s != null) {
 			// parse it out
@@ -237,7 +229,7 @@ public class MainShell {
 					// either exit or pop one level up
 					upOrExit();
 				} else if (!"".equals(s))
-					pw.println("Syntax error.");
+					pw.println("ERROR: Syntax error.");
 			}
 			if (cmd != null) {
 				try {
@@ -248,14 +240,19 @@ public class MainShell {
 					pw.println(ret);
 				} catch (NoSuchElementException e) {
 					// enter subcommand
-					subCommand = cmd;
-					console.setPrompt(topPrompt + ":" + cmd.getCommandName() + ">");
-					// replace the completer
-					console.removeCompleter(topCompleter);
-					Collection<Completer> l = cmd.getCompleters();
-					if (l != null)
-						for (Completer c: l) 
-							console.addCompleter(c);
+					if (!cmd.equals(subCommand)) {
+						subCommand = cmd;
+						console.setPrompt(topPrompt + ":" + cmd.getCommandName() + ">");
+						// replace the completer
+						console.removeCompleter(topCompleter);
+						Collection<Completer> l = cmd.getCompleters();
+						if (l != null)
+							for (Completer c: l) 
+								console.addCompleter(c);
+					} else {
+						String ret = cmd.parseLine(s);
+						pw.println(ret);
+					}
 				}
 			}
 		} else {

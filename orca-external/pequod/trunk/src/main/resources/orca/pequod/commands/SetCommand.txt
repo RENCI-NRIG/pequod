@@ -1,4 +1,8 @@
 set subcommand
 
-	# current - set current container, actor, slice or reservation
-	set current <container|actor|slice|reservation> <container url|actor name|slice|reservation>
+	# current - set current container, actor, slice or reservation to specific values
+	# or the result of the previous 'show' command. 
+	# Omitting the last parameter sets value to the result of the last show command (show containers,
+	# show actors, show slices, show reservations), which could be a single value or a list.
+	# Note that slices and reservations require a GUID, not a name.
+	set current <containers|actors|slices|reservations> [<container url|actor name|slice id|reservation id>]*
