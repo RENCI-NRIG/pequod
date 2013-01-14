@@ -5,4 +5,4 @@ set subcommand
 	# Omitting the last parameter sets value to the result of the last show command (show containers,
 	# show actors, show slices, show reservations), which could be a single value or a list.
 	# Note that slices and reservations require a GUID, not a name.
-	set current <containers|actors|slices|reservations> [<container url|actor name|slice id|reservation id>]*
+	set current <containers|actors|slices|reservations> [ <container url|actor name|slice id|reservation id>]*

@@ -29,8 +29,11 @@ import edu.emory.mathcs.backport.java.util.Collections;
  * Pequod works similar to openssl - you can execute individual
  * commands (e.g. openssl x509 <options>) or enter into a shell
  * environment and do it from there:
- * $ openssl
- * openssl> x509 <options>
+ * $ pequod
+ * pequod> show [<options>]*
+ * 
+ * or
+ * $ pequod show [<options>]*
  * 
  * Individual commands can be added as additional class plugins.
  * Configuration is contained in a properties file that enumerates
@@ -39,11 +42,10 @@ import edu.emory.mathcs.backport.java.util.Collections;
  * 
  * Basic commands are:
  * show [<subcommand>] [<paremeters>*] - show the environment
- * ping <container> - check container liveness
  * help
+ * set
  * 
  * @author ibaldin
- *
  */
 
 public class MainShell {
@@ -153,13 +155,19 @@ public class MainShell {
 		// collect help messages from the commands
 		String ret = "Pequod Orca Shell (c) 2012 RENCI/UNC Chapel Hill\nPequod supports history and command auto-completion.\nAvailable commands:\n";
 		
-		for (String cmd: commands.keySet()) {
-			ret += "  " + cmd + ": " + commands.get(cmd).getCommandShortDescription() + "\n";
-		}
+		ret += getAllCommandsHelp();
 		ret += "  exit: Exit from the shell (Ctrl-D or Ctrl-C also works)\n";
 		
 		ret += "Type the entire command, or enter the first word of the command to enter subcommand with intelligent auto-completion (Using TAB).";
 		pw.println(ret);
+	}
+	
+	public String getAllCommandsHelp() {
+		String ret = "";
+		for (String cmd: commands.keySet()) {
+			ret += "  " + cmd + ": " + commands.get(cmd).getCommandShortDescription() + "\n";
+		}
+		return ret;
 	}
 	
 	/**

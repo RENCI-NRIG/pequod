@@ -12,11 +12,14 @@ show sub-command
 	# show slices
 	show slices for <actor name>|current
 	
+	# show inventory slices (resources that can be delegated)
+	show inventory for <broker name>|current
+	
 	# show slice properties
-	show sliceProperties for <slice name>|current actor <actor name>|current [type <local|config|request|resource>]
+	show sliceProperties for <slice GUID>|current actor <actor name>|current [type <local|config|request|resource>]
 	
 	# show reservations
-	show reservations for <slice name>|current|all actor <actor name>|current [state <closed|active|failed|ticketed|nascent>]
+	show reservations for <slice GUID>|current|all actor <actor name>|current [state <closed|active|failed|ticketed|nascent>]
 	
 	# show reservation properties
 	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource>]
@@ -25,7 +28,7 @@ show sub-command
 	show users [for <container url>|current|all]
 	
 	# show last errors (if current or all - for containers)
-	show errors [for <container url|actor name>|current|all]
+	show errors for <container url|actor name>|current|all
 	
 	# show resources exported by am(s)
 	show exportedResources [for <am name>|current|all]
@@ -37,4 +40,4 @@ show sub-command
 	show packages [for <container url>|current|all]
 	
 	# show current setting
-	show current for <container|actor|slice|reservation>
+	show current for <containers|actors|slices|reservations>

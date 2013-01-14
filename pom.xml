@@ -35,14 +35,23 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>
-				<configuration>
-					<programs>
-						<program>
-							<mainClass>orca.pequod.main.MainShell</mainClass>
-							<name>pequod</name>
-						</program>
-					</programs>
-				</configuration>
+					<executions>
+						<execution>
+							<id>package-execs</id>
+							<phase>package</phase>
+							<goals>
+								<goal>assemble</goal>
+							</goals>
+							<configuration>
+								<programs>
+									<program>
+										<mainClass>orca.pequod.main.MainShell</mainClass>
+										<name>pequod</name>
+									</program>
+								</programs>
+							</configuration>
+						</execution>
+					</executions>
 			</plugin>
 		</plugins>
 	</build>

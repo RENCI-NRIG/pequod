@@ -19,6 +19,7 @@ import orca.manage.beans.ActorMng;
 import orca.manage.beans.ReservationMng;
 import orca.manage.beans.ResultMng;
 import orca.manage.beans.SliceMng;
+import orca.shirako.common.SliceID;
 import orca.util.ID;
 
 /** takes care of maintaining connections
@@ -29,6 +30,7 @@ import orca.util.ID;
 public class ConnectionCache {
 	protected Map<String, ConnectionState> activeConnections;
 	protected Map<String, ActorState> activeActors;
+	protected Map<String, ID> seenSlices;
 	protected String username, password;
 	protected boolean inError = false;
 	protected String lastError = null;
@@ -127,6 +129,7 @@ public class ConnectionCache {
 		this.username = username;
 		this.password = password;
 		this.activeActors = new HashMap<String, ActorState>();
+		this.seenSlices = new HashMap<String, ID>();
 		
 		activeConnections = new HashMap<String, ConnectionState>();
 		
@@ -279,7 +282,7 @@ public class ConnectionCache {
 		
 		if (as.type != Constants.ActorType.AM)
 			return null;
-		
+
 		return as.proxy.proxy.getAuthority(new ID(as.actor.getID()));
 	}
 	
@@ -482,6 +485,24 @@ public class ConnectionCache {
 		return lastShowReservations;
 	}
 	
+	/**
+	 * Cache the results of all getSlices calls
+	 * @param actor
+	 * @return
+	 */
+	public List<SliceMng> getActorSlices(IOrcaActor actor) {
+		if (actor == null)
+			return null;
+		
+		List<SliceMng> ret = actor.getSlices();
+		
+		if (ret != null)
+			for (SliceMng s: ret) {
+				seenSlices.put(s.getName(), new SliceID(s.getSliceID()));
+			}
+		
+		return ret;
+	}
 	
 	public void shutdown() {
 		// logout from all containers
