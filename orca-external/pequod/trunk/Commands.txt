@@ -47,7 +47,11 @@ configure sub-command
 	
 manage sub-command
 
-	# delegate/undelegate resources
+	# claim (from broker)
+	claim reservation <rid> from <am actor name>
+	
+	# close (on any actor)
+	close reservation <rid>
 	
 	
 	

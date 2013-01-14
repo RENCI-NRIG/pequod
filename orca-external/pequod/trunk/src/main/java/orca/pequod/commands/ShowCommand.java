@@ -17,6 +17,7 @@ import orca.manage.IOrcaActor;
 import orca.manage.IOrcaAuthority;
 import orca.manage.IOrcaBroker;
 import orca.manage.IOrcaContainer;
+import orca.manage.IOrcaServerActor;
 import orca.manage.OrcaError;
 import orca.manage.beans.ActorMng;
 import orca.manage.beans.ClientMng;
@@ -27,6 +28,7 @@ import orca.manage.beans.SliceMng;
 import orca.manage.beans.UserMng;
 import orca.pequod.main.Constants;
 import orca.pequod.main.MainShell;
+import orca.shirako.common.ReservationID;
 import orca.shirako.common.SliceID;
 
 public class ShowCommand extends CommandHelper implements ICommand {
@@ -38,7 +40,13 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		Constants.PropertyType.REQUEST.getName(), 
 		Constants.PropertyType.RESOURCE.getName(), 
 		Constants.PropertyType.CONFIGURATION.getName(),
-		Constants.PropertyType.ALL.getName()};
+		Constants.ReservationState.ACTIVE.getName(),
+		Constants.ReservationState.ACTIVETICKETED.getName(),
+		Constants.ReservationState.CLOSED.getName(),
+		Constants.ReservationState.CLOSEWAIT.getName(),
+		Constants.ReservationState.FAILED.getName(),
+		Constants.ReservationState.NASCENT.getName(),
+		Constants.ReservationState.TICKETED.getName()};
 	private static final String CURRENT = "current";
 	private static final String ALL = "all";
 	
@@ -144,6 +152,26 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			}
 		});
 		
+		subcommands.put("inventory", new SubCommand() {
+			public String parse(Scanner l, String last) {
+				try {
+					if (!"for".equals(l.next())) {
+						return null;
+					}
+					try {
+						List<SliceMng> lm = new LinkedList<SliceMng>();
+						String ret = getInventorySlices(l.next(), lm);
+						MainShell.getInstance().getConnectionCache().setLastShowSlices(lm);
+						return ret;
+					} catch (NoSuchElementException ee) {
+						return null;
+					}
+				} catch (NoSuchElementException e) {
+					return null;
+				}
+			}
+		});
+		
 		subcommands.put("sliceProperties", new SubCommand() {
 			public String parse(Scanner l, String last) {
 				try {
@@ -229,6 +257,34 @@ public class ShowCommand extends CommandHelper implements ICommand {
 						return ret;
 					} catch (NoSuchElementException e) {
 						String ret = getReservations(sliceId, actorName, Constants.ReservationState.ALL, r);
+						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
+						return ret;
+					}
+				} catch (NoSuchElementException e) {
+					return null;
+				}
+			}
+		});
+		
+		subcommands.put("reservationProperties", new SubCommand() {
+			public String parse(Scanner l, String last) {
+				try {
+					if (!"for".equals(l.next()))
+						return null;
+					String rid = l.next();
+					if (!"actor".equals(l.next()))
+						return null;
+					String actorName = l.next();
+					
+					List<ReservationMng> r = new LinkedList<ReservationMng>();
+					try {
+						if (!"type".equals(l.next()))
+							return null;
+						String ret = getReservationProperties(rid, actorName, Constants.PropertyType.getType(l.next()), r);
+						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
+						return ret;
+					} catch (NoSuchElementException e) {
+						String ret = getReservationProperties(rid, actorName, Constants.PropertyType.ALL, r);
 						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
 						return ret;
 					}
@@ -357,7 +413,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
 				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
 					if (!CURRENT.equals(u)) {
-						ret += "Container " + u + "\n";
+						ret += "Container " + u + ":\n";
 						ret += getUsers(u);
 					}
 				}
@@ -393,7 +449,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
 				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
 					if (!CURRENT.equals(u)) {
-						ret += "Container " + u + "\n";
+						ret += "Container " + u + ":\n";
 						ret += getCerts(u);
 					}
 				}
@@ -437,7 +493,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
 				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
 					if (!CURRENT.equals(u)) {
-						ret += "Container " + u + "\n";
+						ret += "Container " + u + ":\n";
 						ret += getActorsByType(t, u, l);
 					}
 				}
@@ -481,7 +537,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
 				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 					if (!CURRENT.equals(a)) {
-						ret += "Actor " + a + "\n";
+						ret += "Actor " + a + ":\n";
 						ret += getClients(a);
 					}
 				}
@@ -529,7 +585,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
 				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 					if (!CURRENT.equals(a)) {
-						ret += "Actor " + a + "\n";
+						ret += "Actor " + a + ":\n";
 						ret += getSlices(a, lm);
 					}
 				}
@@ -553,6 +609,51 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		return ret;
 	}
 	
+	/**
+	 * List inventory slices in a particular actor (with delegatable resources)
+	 * @param actorName
+	 * @return
+	 */
+	private static String getInventorySlices(String actorName, List<SliceMng> lm) {
+		String ret = "";
+		if (CURRENT.equals(actorName)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+					if (!CURRENT.equals(a)) {
+						ret += "Actor " + a + ":\n";
+						ret += getSlices(a, lm);
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current actors not set";
+		}
+		
+		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
+		if (actor == null)
+			return "ERROR: This actor does not exist";
+		
+		IOrcaServerActor sActor = null;
+		
+		try {
+			sActor = (IOrcaServerActor)actor;
+		} catch (ClassCastException e) {
+			;
+		}
+		if (sActor == null)
+			return "ERROR: actor " + actorName + " cannot have inventory";
+
+		if (sActor.getInventorySlices() == null) 
+			return "ERROR: actor " + actorName + " has no inventory";
+		
+		lm.addAll(sActor.getInventorySlices());
+		
+		for (SliceMng s: lm)
+			ret += s.getName() + "\t" + s.getSliceID() + "\t" + (s.getResourceType() != null ? s.getResourceType() : "") + "\n";
+		return ret;
+	}
+	
 	/** 
 	 * get properties of a slice
 	 * @param sliceName
@@ -566,7 +667,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
 				for (String s: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
 					if (!CURRENT.equals(s)) {
-						ret += "Slice " + s + "\n";
+						ret += "Slice " + s + ":\n";
 						ret += getSliceProperties(s, actorName, t);
 					}
 				}
@@ -608,21 +709,18 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if ((!slice.getName().equals(sliceName)) && (!slice.getSliceID().toString().equals(sliceName)))
 				continue;
 			fired = true;
+			ret += t.getName().toUpperCase() + ":\n";
 			switch(t) {
 			case RESOURCE:
-				ret += "Resource Properties:\n";
 				props = slice.getResourceProperties();
 				break;
 			case REQUEST:
-				ret += "Request Properties:\n";
 				props = slice.getRequestProperties();
 				break;
 			case CONFIGURATION:
-				ret += "Configuration Properties:\n";
 				props = slice.getConfigurationProperties();
 				break;
 			case LOCAL:
-				ret += "Local Properties:\n";
 				props = slice.getLocalProperties();
 				break;
 			case ALL:
@@ -636,11 +734,12 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				return ret;
 			}
 		}
+		
 		if (!fired)
 			return "ERROR: No such slice  in this actor";
 	
 		for (PropertyMng p: props.getProperty()) {
-			ret += p.getName() + "\t" + p.getValue() + "\n";
+			ret += "\t" + p.getName() + " = " + p.getValue() + "\n";
 		}
 		
 		return ret;
@@ -658,7 +757,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
 				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
 					if (!CURRENT.equals(u)) {
-						ret += "Container " + u + "\n";
+						ret += "Container " + u + ":\n";
 						ret += getContainerError(u);
 					}
 				}
@@ -691,7 +790,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
 				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 					if (!CURRENT.equals(a)) {
-						ret += "Actor " + a + "\n";
+						ret += "Actor " + a + ":\n";
 						ret += getActorError(a);
 					}
 				}
@@ -760,7 +859,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
 					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 						if (!CURRENT.equals(a)) {
-							ret += "Actor " + a + "\n";
+							ret += "Actor " + a + ":\n";
 							ret += getReservations(sliceId, a, s, rm);
 						}
 					}
@@ -778,6 +877,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
 				for (String ss: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
 					if (!CURRENT.equals(ss)) {
+						ret += "Resevations for slice " + ss + ":\n";
 						ret += getReservations2(ss, actor, s, rm);
 					}
 				}
@@ -817,10 +917,19 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		case UNKNOWN:
 			return "ERROR: Unknown state";
 		case ALL:
+			// try GUID first
 			reservations = actor.getReservations(new SliceID(sliceId));
+			if ((reservations == null) || (reservations.size() == 0)) {
+				// try to convert slice name to slice GUID
+			}
+				
 			break;
 		default:
+			// try GUID first
 			reservations = actor.getReservations(new SliceID(sliceId), s.getIndex());
+			if ((reservations == null) || (reservations.size() == 0)) {
+				// try to convert slice name to slice GUID
+			}
 			break;
 		}
 		
@@ -831,6 +940,131 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			Constants.ReservationState.getState(res.getState()) + "\n\t " + res.getNotices() + "\n";
 		}
 		
+		return ret;
+	}
+	
+	/**
+	 * Get reservation properties for a particular reservation on a given actor
+	 * @param rid
+	 * @param actorName
+	 * @param s
+	 * @return
+	 */
+	private static String getReservationProperties(String rid, String actorName, Constants.PropertyType s, List<ReservationMng> rm) {
+		String ret = "";
+		
+		if (CURRENT.equals(actorName)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null)
+				if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+						if (!CURRENT.equals(a)) {
+							ret += "Actor " + a + ":\n";
+							ret += getReservationProperties(rid, a, s, rm);
+						}
+					}
+					return ret;
+				}
+			else
+				return "ERROR: Current actor not set";
+		}
+
+		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
+		if (actor == null)
+			return "ERROR: This actor does not exist";
+
+		if (CURRENT.equals(rid)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentReservationIds() != null) {
+				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
+					if (!CURRENT.equals(rrid)) {
+						ret += "Reservation " + rrid + ":\n";
+						ret += getReservationProperties2(rrid, actor, s, rm);
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current slice not set";
+		} 
+		
+		return getReservationProperties2(rid, actor, s, rm);
+	}
+	
+	/**
+	 * Get reservation properties
+	 * @param rid
+	 * @param actor
+	 * @param s
+	 * @return
+	 */
+	private static String getReservationProperties2(String rid, IOrcaActor actor, Constants.PropertyType s, List<ReservationMng> rm) {
+		String ret = "";
+		
+		ReservationMng reservation = actor.getReservation(new ReservationID(rid));
+		
+		if (reservation == null)
+			return "ERROR: Reservation " + rid + " does not exist on actor " + actor.getName();
+		
+		PropertiesMng cProps = null;
+		PropertiesMng rProps = null;
+		PropertiesMng lProps = null;
+		PropertiesMng rsProps = null;
+		
+		switch(s) {
+		case ALL:
+			cProps = reservation.getConfigurationProperties();
+			rProps = reservation.getRequestProperties();
+			lProps = reservation.getLocalProperties();
+			rsProps = reservation.getResourceProperties();
+			break;
+		case CONFIGURATION:
+			cProps = reservation.getConfigurationProperties();
+			break;
+		case LOCAL:
+			lProps = reservation.getLocalProperties();
+			break;
+		case RESOURCE:
+			rsProps = reservation.getResourceProperties();
+			break;
+		case REQUEST:
+			rProps = reservation.getRequestProperties();
+			break;
+		case UNKNOWN:
+		default:
+			return "ERROR: Unknown property type";
+		}
+
+		ret += reservation.getReservationID() + "\n";
+
+		if (cProps != null) {
+			ret += printProperties(Constants.PropertyType.CONFIGURATION, cProps);
+		}
+		
+		if (lProps != null) {
+			ret += printProperties(Constants.PropertyType.LOCAL, lProps);
+		}
+		
+		if (rProps != null) {
+			ret += printProperties(Constants.PropertyType.REQUEST, rProps);
+		}
+		
+		if (rsProps != null) {
+			ret += printProperties(Constants.PropertyType.RESOURCE, rsProps);
+		}	
+		
+		return ret;
+	}
+	
+	private static String printProperties(Constants.PropertyType tt, PropertiesMng props) {
+		if (props == null)
+			return null;
+
+		String ret = tt.getName().toUpperCase() + ":\n";
+		List<PropertyMng> l = props.getProperty();
+		if (l != null) {
+			for (PropertyMng pm: l) {
+				ret += "\t" + pm.getName() + " = " + pm.getValue() + "\n"; 
+			}
+		}
 		return ret;
 	}
 }

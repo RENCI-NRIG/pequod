@@ -1,0 +1,13 @@
+manage sub-command
+
+	# claim reservation (from broker)
+	claim reservation <rid>|current|all for <broker actor name> from <am actor name>|current
+	
+	# close reservation (on any actor)
+	close reservation <rid>|current for <actor name>|current
+	
+	# close slice (on any actor)
+	close slice <slice GUID>|current for <actor name>|current
+	
+	# remove reservation (previously closed; on any actor)
+	remove reservation <rid>|current for <actor name>|current

@@ -59,6 +59,11 @@ public class HelpCommand extends CommandHelper implements ICommand{
 		}
 	}
 
+	@Override
+	public String getCommandHelp() {
+		return MainShell.getInstance().getAllCommandsHelp();
+	}
+	
 	public void shutdown() {
 		// nothing to do
 	}
