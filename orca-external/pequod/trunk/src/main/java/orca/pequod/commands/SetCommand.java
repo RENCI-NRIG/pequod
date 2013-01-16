@@ -72,7 +72,7 @@ public class SetCommand extends CommandHelper implements ICommand {
 		// some completers are dynamically constructed
 		
 		Collection<String> fourthCompleter = MainShell.getInstance().getConnectionCache().getContainers();
-		Collection<ActorMng> actors = MainShell.getInstance().getConnectionCache().getActiveActors();
+		Collection<ActorMng> actors = MainShell.getInstance().getConnectionCache().getActiveActors(null);
 		
 		List<String> actorNames = new LinkedList<String>();
 		for (ActorMng a: actors) 

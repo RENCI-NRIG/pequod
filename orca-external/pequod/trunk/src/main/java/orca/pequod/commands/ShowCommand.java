@@ -2,6 +2,7 @@ package orca.pequod.commands;
 
 import java.security.cert.Certificate;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -349,7 +350,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		// some completers are dynamically constructed
 		
 		Collection<String> fourthCompleter = MainShell.getInstance().getConnectionCache().getContainers();
-		Collection<ActorMng> actors = MainShell.getInstance().getConnectionCache().getActiveActors();
+		Collection<ActorMng> actors = MainShell.getInstance().getConnectionCache().getActiveActors(null);
 		
 		List<String> actorNames = new LinkedList<String>();
 		for (ActorMng a: actors) 
@@ -511,10 +512,10 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			return "ERROR: No connection to container " + url;
 		Collection<ActorMng> actors;
 		switch(t) {
-		case AM: actors = MainShell.getInstance().getConnectionCache().getActiveActors(Constants.ActorType.AM); break;
-		case SM: actors = MainShell.getInstance().getConnectionCache().getActiveActors(Constants.ActorType.SM); break;
-		case BROKER: actors = MainShell.getInstance().getConnectionCache().getActiveActors(Constants.ActorType.BROKER); break;
-		default: actors = MainShell.getInstance().getConnectionCache().getActiveActors(); break;
+		case AM: actors = MainShell.getInstance().getConnectionCache().getActiveActors(Constants.ActorType.AM, url); break;
+		case SM: actors = MainShell.getInstance().getConnectionCache().getActiveActors(Constants.ActorType.SM, url); break;
+		case BROKER: actors = MainShell.getInstance().getConnectionCache().getActiveActors(Constants.ActorType.BROKER, url); break;
+		default: actors = MainShell.getInstance().getConnectionCache().getActiveActors(url); break;
 		}
 		l.addAll(actors);
 		for (ActorMng a: actors) {
@@ -936,8 +937,15 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		rm.addAll(reservations);
 		
 		for (ReservationMng res: reservations) {
-			ret += res.getReservationID() + "\t" + actor.getName() + "\t" + res.getSliceID() + "\t" + 
-			Constants.ReservationState.getState(res.getState()) + "\n\t " + res.getNotices() + "\n";
+			ret += res.getReservationID() + "\t" + actor.getName() + "\n\t" + 
+			res.getUnits() + "\t" + res.getResourceType() + "\t[ " + Constants.ReservationState.getState(res.getState()) +", " + 
+			Constants.ReservationState.getState(res.getPendingState()) + "]\t\n";
+			ret += "\tNotices: " + res.getNotices().trim();
+			if (!res.getNotices().trim().endsWith("\n")) 
+				ret += "\n";
+			Date st = new Date(res.getStart());
+			Date en = new Date(res.getEnd());
+			ret += "\tStart: " + st + "\tEnd:" + en;
 		}
 		
 		return ret;
