@@ -110,8 +110,8 @@ public class ConnectionCache {
 		// get the names of actors
 		
 		if (!cs.inError) {
-			for (ActorMng a: cs.proxy.getActors()) {
-				// insert under name and guid
+			for (ActorMng a: cs.proxy.getActorsFromDatabase()) {
+				// insert under name and guid 
 				ActorState as = new ActorState(a, cs);
 				activeActors.put(a.getName(), as);
 				activeActors.put(a.getID(), as);
@@ -212,12 +212,16 @@ public class ConnectionCache {
 	}
 	
 	/**
-	 * Return a copy of collection of known active actors across containers
+	 * Return a copy of collection of known active actors in a given container
+	 * if url is null, then all containers
+	 * @param url - url of the container
 	 * @return
 	 */
-	public Collection<ActorMng> getActiveActors() {
+	public Collection<ActorMng> getActiveActors(String url) {
 		Set<ActorMng> ret = new HashSet<ActorMng>();
 		for(ActorState as: activeActors.values()) {
+			if ((url != null) && (!as.proxy.url.equals(url))) 
+				continue;
 			ret.add(as.actor);
 		}
 		return ret;
@@ -226,11 +230,15 @@ public class ConnectionCache {
 	/**
 	 * get active actors by type
 	 * @param t
+	 * @param url
 	 * @return
 	 */
-	public Collection<ActorMng> getActiveActors(Constants.ActorType t) {
+	public Collection<ActorMng> getActiveActors(Constants.ActorType t, String url) {
 		Set<ActorMng> ret = new HashSet<ActorMng>();
 		for(ActorState as: activeActors.values()) {
+			if (!as.proxy.url.equals(url)) {
+				continue;
+			}
 			if ((t == Constants.ActorType.ACTOR) ||
 					(t == Constants.ActorType.UNKNOWN))
 				ret.add(as.actor);

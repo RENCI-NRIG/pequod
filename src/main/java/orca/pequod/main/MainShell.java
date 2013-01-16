@@ -44,6 +44,10 @@ import edu.emory.mathcs.backport.java.util.Collections;
  * show [<subcommand>] [<paremeters>*] - show the environment
  * help
  * set
+ * manage
+ * 
+ * Additional commands can be added at startup time using a properties file
+ * that lists classes implementing individual commands
  * 
  * @author ibaldin
  */
@@ -286,7 +290,7 @@ public class MainShell {
 	}
 	
 	public static void main(String[] argv) {
-
+		
 		MainShell ms = MainShell.getInstance();
 		
 		ms.addShutDownHandler();

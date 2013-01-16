@@ -13,8 +13,8 @@ import jline.console.completer.Completer;
 import jline.console.completer.NullCompleter;
 import jline.console.completer.StringsCompleter;
 import orca.manage.IOrcaActor;
-import orca.manage.IOrcaClientActor;
-import orca.manage.IOrcaServerActor;
+import orca.manage.IOrcaAuthority;
+import orca.manage.IOrcaBroker;
 import orca.manage.beans.ActorMng;
 import orca.manage.beans.ReservationMng;
 import orca.manage.beans.SliceMng;
@@ -42,7 +42,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 						return null;
 					}
 					String rid = l.next();
-					if (!"on".equals(l.next()))
+					if (!"for".equals(l.next()))
 						return null;
 					String brokerName = l.next();
 					if (!"from".equals(l.next()))
@@ -69,7 +69,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 					}
 					// res or slice id
 					String id = l.next();
-					if (!"on".equals(l.next()))
+					if (!"for".equals(l.next()))
 						return null;
 					String actorName = l.next();
 					if (closeRes)
@@ -89,7 +89,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 						return null;
 					}
 					String rid = l.next();
-					if (!"on".equals(l.next()))
+					if (!"for".equals(l.next()))
 						return null;
 					String actorName = l.next();
 					return removeReservation(rid, actorName);
@@ -124,7 +124,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		// some completers are dynamically constructed
 		
 		Collection<String> fourthCompleter = MainShell.getInstance().getConnectionCache().getContainers();
-		Collection<ActorMng> actors = MainShell.getInstance().getConnectionCache().getActiveActors();
+		Collection<ActorMng> actors = MainShell.getInstance().getConnectionCache().getActiveActors(null);
 		
 		List<String> actorNames = new LinkedList<String>();
 		for (ActorMng a: actors) 
@@ -218,16 +218,16 @@ public class ManageCommand extends CommandHelper implements ICommand {
 	
 	private static String claimReservation2(String rid, IOrcaActor brokerActor, IOrcaActor amActor) {
 		
-		IOrcaClientActor brokerClientActor = null;
+		IOrcaBroker broker = null;
 		try {
-			brokerClientActor = (IOrcaClientActor)brokerActor;
+			broker = (IOrcaBroker)brokerActor;
 		} catch (ClassCastException e) {
 			return "ERROR: actor " + brokerActor.getName() + " is not a broker";
 		}
 		
-		IOrcaServerActor amServerActor = null;
+		IOrcaAuthority amServerActor = null;
 		try {
-			amServerActor = (IOrcaServerActor)amActor;
+			amServerActor = (IOrcaAuthority)amActor;
 		} catch (ClassCastException e) {
 			return "ERROR: actor " + amActor.getName() + " us not an AM";
 		}
@@ -237,8 +237,13 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		if (res == null) 
 			return "ERROR: reservation " + rid + " does not exist on " + amActor.getName();
 		
-		brokerClientActor.claimResources(amActor.getGuid(), new SliceID(res.getSliceID()), new ReservationID(rid));
-		return "Claiming on " + brokerActor.getName() + " from actor " + amActor.getGuid() + " reservation " + rid + " slice " + res.getSliceID();
+		ReservationMng res1 = broker.claimResources(amActor.getGuid(), new ReservationID(rid));
+		String ret = "";
+		if (res1 != null) {
+			ret = res1.getReservationID() + " " + res1.getState() + " " + res1.getSliceID() + " " + res1.getUnits();
+		}
+		return "Claiming on " + brokerActor.getName() + " from actor " + amActor.getGuid() + " reservation " + rid + " slice " + res.getSliceID() + 
+		"[" + ret + "]";
 	}
 	
 	private static String closeReservation(String rid, String actorName) {

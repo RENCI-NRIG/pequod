@@ -1,0 +1,3 @@
+This is a fixed version of icu4j jar and sig file. If pack200 starts giving problems in packing the jar from the repo, put this under
+
+~/.m2/repository/com/ibm/icu4j/2.6.1/
