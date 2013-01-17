@@ -1,0 +1,9 @@
+To build
+
+$ mvn clean package 
+
+Then run with 
+$ sh target/appassembler/bin/pequod
+
+First time you run it will give you a template for a properties file to put in $HOME/.pequod/
+
