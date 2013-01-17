@@ -1,6 +1,11 @@
 package orca.pequod.main;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.HashMap;
@@ -59,6 +64,9 @@ public class MainShell {
 	private static final String PEQUOD_CONTAINERS_PROP = "pequod.containers";
 	private static final String PEQUOD_USERNAME_PROP = "pequod.username";
 	private static final String PEQUOD_PASSWORD_PROP = "pequod.password";
+	private static final String PREF_DIR = ".pequod";
+	private static final String PREF_FILE="properties";
+
 	
 	protected Map<String, ICommand> commands = new HashMap<String, ICommand>();
 	protected Properties props;
@@ -70,13 +78,9 @@ public class MainShell {
 	protected ConnectionCache cc;
 	
 	private MainShell() {
-		// construct a list of known commands
-		props = PropertyLoader.loadProperties("orca.pequod.pequod.properties");
 		
-		if (props == null) {
-			System.err.println("ERROR: Unable to load default properties, exiting.");
-			System.exit(1);
-		}
+		processPreferences();
+
 		if (props.get(PEQUOD_COMMANDS_PROP) == null) {
 			System.err.println("ERROR: Unable to determine the list of command classes, exiting.");
 			System.exit(1);
@@ -127,6 +131,57 @@ public class MainShell {
 			System.exit(1);
 		}
 	}
+	
+	private Properties loadProperties(String fileName) throws IOException {
+		File prefs = new File(fileName);
+		FileInputStream is = new FileInputStream(prefs);
+		BufferedReader bin = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+
+		Properties p = new Properties();
+		p.load(bin);
+		bin.close();
+
+		return p;
+	}
+
+	public String getProperty(String name) {
+		return props.getProperty(name);
+	}
+	
+    protected void processPreferences() {
+    	// load default properties
+    	props = PropertyLoader.loadProperties("orca/pequod/pequod.properties");
+
+    	if (props == null) {
+    		System.err.println("Unable to load default configuration properties. Fatal error, please contact developers. Exiting");
+    		System.exit(1);
+    	}
+    	
+    	Properties p = System.getProperties();
+
+    	// load user properties and merge them with defaults
+    	String prefFilePath = PREF_FILE;
+
+    	prefFilePath = "" + p.getProperty("user.home") + p.getProperty("file.separator") + PREF_DIR + p.getProperty("file.separator") + PREF_FILE;
+    	try {
+    		Properties userProps = loadProperties(prefFilePath);
+    		props.putAll(userProps);
+    	} catch (IOException e) {
+    		System.err.println("Unable to load local config file " + prefFilePath + ", exiting.");
+    		InputStream is = Class.class.getResourceAsStream("/orca/pequod/pequod.sample.properties");
+    		if (is != null) {
+    			try {
+    				String s = new java.util.Scanner(is).useDelimiter("\\A").next();
+    				System.err.println("Create $HOME/.pequod/properties file as follows: \n\n" + s);
+    			} catch (java.util.NoSuchElementException ee) {
+    				;
+    			}
+    		} else {
+    			System.err.println("Unable to load sample properties");
+    		}
+    		System.exit(1);
+    	}
+    }
 	
 	private static MainShell instance = new MainShell();
 	public static MainShell getInstance() {

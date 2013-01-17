@@ -131,9 +131,11 @@
 			<version>2.6</version>
 		</dependency>
 		<dependency>
-        	<groupId>com.googlecode.lanterna</groupId>
-        	<artifactId>lanterna</artifactId>
-       	 	<version>2.1.2</version>
-   	 	</dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.5</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 </project>
