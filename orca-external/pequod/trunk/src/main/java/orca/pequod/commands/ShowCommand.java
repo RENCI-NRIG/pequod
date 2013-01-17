@@ -1,5 +1,13 @@
 package orca.pequod.commands;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.Date;
@@ -32,8 +40,11 @@ import orca.pequod.main.MainShell;
 import orca.shirako.common.ReservationID;
 import orca.shirako.common.SliceID;
 
+import org.apache.commons.lang.text.StrSubstitutor;
+
 public class ShowCommand extends CommandHelper implements ICommand {
-	public static String COMMAND_NAME="show";
+	public static final String COMMAND_NAME="show";
+	public static final int LOGCHUNKSIZE = 1024*32;
 	private static String[] thirdField = {"for"};
 	private static String[] fifthField = {"actor"};
 	private static String[] seventhField = {"state", "type"};
@@ -89,6 +100,12 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					// all containers
 					return getUsers();
 				}
+			}
+		});
+		
+		subcommands.put("logs", new SubCommand() {
+			public String parse(Scanner l, String last) {
+				return printLogTail(0);				
 			}
 		});
 		
@@ -216,7 +233,8 @@ public class ShowCommand extends CommandHelper implements ICommand {
 						return null;
 					}
 				} catch (NoSuchElementException e) {
-					return null;
+					// show errors on all actors
+					return getAllActorErrors();
 				}
 			}
 		});
@@ -813,6 +831,17 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		return "No errors";
 	}
 	
+	private static String getAllActorErrors() {
+		String ret = "";
+		for (String c: MainShell.getInstance().getConnectionCache().getContainers()) {
+			ret += getContainerError(c) + "\n";
+			for (ActorMng am: MainShell.getInstance().getConnectionCache().getActiveActors(c)) {
+				ret += "\t" + am.getName() + ":\t" + getActorError(am.getName()) + "\n";
+			}
+		}
+		return ret;
+	}
+	
 	/**
 	 * Get the value of current setting
 	 * @param s
@@ -991,7 +1020,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				return ret;
 			}
 			else
-				return "ERROR: Current slice not set";
+				return "ERROR: Current reservation not set";
 		} 
 		
 		return getReservationProperties2(rid, actor, s, rm);
@@ -1074,5 +1103,56 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			}
 		}
 		return ret;
+	}
+	
+	private static String printLogTail(int lines) {
+		String ret = "";
+		
+		String logFile = MainShell.getInstance().getProperty("log4j.appender.file.File");
+		logFile = StrSubstitutor.replaceSystemProperties(logFile);
+		
+		if (logFile == null) 
+			return "Unable to find logfile";
+		try {
+			RandomAccessFile raf = new RandomAccessFile(new File(logFile), "r");
+			
+			// read a chunk of file
+			final int chunkSize = LOGCHUNKSIZE;
+			byte[] buf = new byte[chunkSize];
+			
+			boolean cont=true;
+			while(cont) {
+				cont = false;
+				
+				long end = raf.length();
+			
+				long start = end - chunkSize;
+			
+				if (start < 0)
+					start = 0;
+				else 
+					raf.seek(start);
+			
+				long readLen = raf.read(buf, 0, (int)(end - start));
+					
+				if (readLen < 0)
+					return "Unable to read logfile";
+					
+			}
+			
+			InputStream bs = new ByteArrayInputStream(buf);
+			InputStreamReader isr = new InputStreamReader(bs);
+			BufferedReader br = new BufferedReader(isr);
+			
+			while (br.ready()) {
+				ret += br.readLine() + "\n";
+			}
+	
+			return ret;
+		} catch (FileNotFoundException e) {
+			return "Unable to open logfile: " + e;
+		} catch (IOException e) {
+			return "Unable to read logfile: " + e;
+		}
 	}
 }

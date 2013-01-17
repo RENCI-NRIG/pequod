@@ -1,0 +1,7 @@
+file sub-command
+
+	# execute a Pequod script
+	file execute <file name>
+	
+	# display a text file (script or other)
+	file show <file name>

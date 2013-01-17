@@ -25,7 +25,7 @@ import orca.shirako.common.SliceID;
 public class ManageCommand extends CommandHelper implements ICommand {
 	public static String COMMAND_NAME="manage";
 	private static String[] thirdField = {"reservation", "slice"};
-	private static String[] fifthField = {"for"};
+	private static String[] fifthField = {"actor"};
 	private static String[] seventhField = {"from"};
 	
 	private static final String CURRENT = "current";
@@ -42,7 +42,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 						return null;
 					}
 					String rid = l.next();
-					if (!"for".equals(l.next()))
+					if (!"actor".equals(l.next()))
 						return null;
 					String brokerName = l.next();
 					if (!"from".equals(l.next()))
@@ -59,18 +59,20 @@ public class ManageCommand extends CommandHelper implements ICommand {
 			public String parse(Scanner l, String last) {
 				try {
 					boolean closeRes = true;
-					if (!"reservation".equals(l.next())) {
+					String tmp = l.next();
+					if ("reservation".equals(tmp)) {
 						closeRes = true;
 					} else { 						
-						if (!"slice".equals(l.next())) {
+						if ("slice".equals(tmp)) {
 							closeRes = false;
 						} else 
 							return null;
 					}
 					// res or slice id
 					String id = l.next();
-					if (!"for".equals(l.next()))
+					if (!"actor".equals(l.next())) {
 						return null;
+					}
 					String actorName = l.next();
 					if (closeRes)
 						return closeReservation(id, actorName);
@@ -89,7 +91,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 						return null;
 					}
 					String rid = l.next();
-					if (!"for".equals(l.next()))
+					if (!"actor".equals(l.next()))
 						return null;
 					String actorName = l.next();
 					return removeReservation(rid, actorName);
@@ -268,8 +270,21 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		if (actor == null)
 			return "ERROR: Actor " + actorName + " does not exist";
 		
-		boolean res = actor.closeReservation(new ReservationID(rid));
+		if (CURRENT.equals(rid)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentReservationIds() != null) {
+				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
+					if (!CURRENT.equals(rrid)) {
+						boolean res = actor.closeReservation(new ReservationID(rrid));
+						ret += "Closed reservation " + rrid + " on " + actorName + " with result " + res;
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current reservation not set";
+		} 
 		
+		boolean res = actor.closeReservation(new ReservationID(rid));
 		return "Closed reservation " + rid + " on " + actorName + " with result " + res;
 	}
 	

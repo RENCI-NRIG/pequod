@@ -28,7 +28,7 @@ show sub-command
 	show users [for <container url>|current|all]
 	
 	# show last errors (if current or all - for containers)
-	show errors for <container url|actor name>|current|all
+	show errors [for <container url|actor name>|current|all]
 	
 	# show resources exported by am(s)
 	show exportedResources [for <am name>|current|all]
