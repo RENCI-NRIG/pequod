@@ -70,7 +70,12 @@ public class FileCommand extends CommandHelper implements ICommand {
 	public List<Completer> getCompleters() {
 		List<Completer> ret = new LinkedList<Completer>();
 		
-		ret.add(new ArgumentCompleter(new StringsCompleter(COMMAND_NAME, MainShell.EXIT_COMMAND),
+		// get default completers (e.g. exit, history)
+		List<String> defComp = defaultCompleters();
+		// add the command
+		defComp.add(COMMAND_NAME);
+		
+		ret.add(new ArgumentCompleter(new StringsCompleter(defComp),
 				new StringsCompleter(secondField),
 				new FileNameCompleter(),
 				new NullCompleter()

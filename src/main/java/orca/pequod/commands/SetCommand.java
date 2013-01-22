@@ -82,7 +82,12 @@ public class SetCommand extends CommandHelper implements ICommand {
 		fourthCompleter.add("slice name (no autocompletion)");
 		fourthCompleter.add("reservation name (no autocompletion)");
 		
-		ret.add(new ArgumentCompleter(new StringsCompleter(COMMAND_NAME, MainShell.EXIT_COMMAND),
+		// get default completers (e.g. exit, history)
+		List<String> defComp = defaultCompleters();
+		// add the command
+		defComp.add(COMMAND_NAME);
+		
+		ret.add(new ArgumentCompleter(new StringsCompleter(defComp),
 				new StringsCompleter(secondField),
 				new StringsCompleter(thirdField),
 				new StringsCompleter(fourthCompleter),

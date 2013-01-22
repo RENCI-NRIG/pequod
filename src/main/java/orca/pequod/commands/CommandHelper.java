@@ -1,9 +1,13 @@
 package orca.pequod.commands;
 
 import java.io.InputStream;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+
+import orca.pequod.main.MainShell;
 
 /** 
  * Helper methods for implementing commands
@@ -61,5 +65,14 @@ public abstract class CommandHelper {
 		} catch (NoSuchElementException e) {
 			return syntaxError();
 		}
+	}
+	
+	protected List<String> defaultCompleters() {
+		List<String> ret = new LinkedList<String>();
+		
+		ret.add(MainShell.EXIT_COMMAND);
+		ret.add(MainShell.HISTORY_COMMAND);
+		
+		return ret;
 	}
 }
