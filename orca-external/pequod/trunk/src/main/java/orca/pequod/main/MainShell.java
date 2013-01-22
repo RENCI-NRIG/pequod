@@ -59,6 +59,7 @@ import edu.emory.mathcs.backport.java.util.Collections;
 
 public class MainShell {
 	public static final String EXIT_COMMAND = "exit";
+	public static final String HISTORY_COMMAND = "history";
 	private static final String PEQUOD_DEAFULT_PROMPT_PROP = "pequod.default.prompt";
 	private static final String PEQUOD_COMMANDS_PROP = "pequod.commands";
 	private static final String PEQUOD_CONTAINERS_PROP = "pequod.containers";
@@ -118,10 +119,13 @@ public class MainShell {
 		// initialize the completer and console
 		Set<String> cmdNames = new HashSet<String>(commands.keySet());
 		cmdNames.add(EXIT_COMMAND);
+		cmdNames.add(HISTORY_COMMAND);
 		
 		topCompleter = new StringsCompleter(cmdNames);
 		try {
 			console = new ConsoleReader();
+			console.setHistoryEnabled(true);
+			console.setPaginationEnabled(true);
 			console.addCompleter(topCompleter);
 			pw = new PrintWriter(console.getOutput());
 			topPrompt = (String)props.get(PEQUOD_DEAFULT_PROMPT_PROP);
@@ -215,8 +219,8 @@ public class MainShell {
 		String ret = "Pequod Orca Shell (c) 2012 RENCI/UNC Chapel Hill\nPequod supports history and command auto-completion.\nAvailable commands:\n";
 		
 		ret += getAllCommandsHelp();
+		ret += "  history: show command history (!<command index> invokes the command)\n";
 		ret += "  exit: Exit from the shell (Ctrl-D or Ctrl-C also works)\n";
-		
 		ret += "Type the entire command, or enter the first word of the command to enter subcommand with intelligent auto-completion (Using TAB).";
 		pw.println(ret);
 	}
@@ -274,13 +278,41 @@ public class MainShell {
 			
 	}
 	
+	private String history_print() {
+		StringBuilder sb = new StringBuilder();
+				
+		for (int i=0; i< console.getHistory().size(); i++) {
+			sb.append(i + ": " + console.getHistory().get(i) + "\n");
+		}
+		return sb.toString();
+	}
+	
 	public ICommand getSubCommand() {
 		return subCommand;
 	}
 	
 	protected String readLine() throws IOException {
 		
-		String s = console.readLine();
+		String s = null;
+		
+		try {
+			s = console.readLine();
+		} catch (IllegalArgumentException e) {
+			console.setCursorPosition(0);
+			console.killLine();
+			console.beep();
+			pw.println("ERROR: no command with this index");
+			pw.flush();
+			return s;
+		} catch (Exception e) {
+			console.setCursorPosition(0);
+			console.killLine();
+			console.beep();
+			pw.println("ERROR: exception " + e);
+			pw.flush();
+			return s;
+		}
+
 		if (s != null) {
 			// parse it out
 			Scanner scanner = new Scanner(s);
@@ -295,8 +327,12 @@ public class MainShell {
 				if (EXIT_COMMAND.equals(first)) {
 					// either exit or pop one level up
 					upOrExit();
-				} else if (!"".equals(s))
+				} else if (HISTORY_COMMAND.equals(first)) {
+					pw.println(history_print());
+				} else if (!"".equals(s)) {
+					console.beep();
 					pw.println("ERROR: Syntax error.");
+				}
 			}
 			if (cmd != null) {
 				try {
