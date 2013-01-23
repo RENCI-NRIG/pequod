@@ -213,7 +213,6 @@ public class ManageCommand extends CommandHelper implements ICommand {
 								ret += claimReservation2(res.getReservationID(), brokerActor, amActor) + "\n";
 							}
 						}
-						break;
 					}
 				}
 			}

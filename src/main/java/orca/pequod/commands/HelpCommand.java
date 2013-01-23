@@ -66,7 +66,15 @@ public class HelpCommand extends CommandHelper implements ICommand{
 
 	@Override
 	public String getCommandHelp() {
-		return MainShell.getInstance().getAllCommandsHelp();
+		// if in subcommand, return sub-command help,
+		// otherwise top-level help
+		if (MainShell.getInstance().getSubCommand() != null) {
+			if (MainShell.getInstance().getSubCommand().getCommandName().equals(COMMAND_NAME))
+				return super.getCommandHelp();
+			else
+				return MainShell.getInstance().getSubCommand().getCommandHelp();
+		} else
+			return MainShell.getInstance().getAllCommandsHelp();
 	}
 	
 	public void shutdown() {

@@ -23,6 +23,7 @@ import jline.TerminalFactory;
 import jline.console.ConsoleReader;
 import jline.console.completer.Completer;
 import jline.console.completer.StringsCompleter;
+import orca.pequod.commands.HelpCommand;
 import orca.pequod.commands.ICommand;
 import orca.pequod.util.PropertyLoader;
 
@@ -339,11 +340,15 @@ public class MainShell {
 			}
 			if (cmd != null) {
 				try {
-					// is there anything following it?
-					scanner.next();
-					// execute command
-					String ret = cmd.parseLine(s);
-					pw.println(ret);
+					if (cmd.getCommandName().equals(HelpCommand.COMMAND_NAME)) {
+						pw.println(cmd.parseLine(s));
+					} else {
+						// is there anything following it?
+						scanner.next();
+						// execute command
+						String ret = cmd.parseLine(s);
+						pw.println(ret);
+					}
 				} catch (NoSuchElementException e) {
 					// enter subcommand
 					if (!cmd.equals(subCommand)) {
