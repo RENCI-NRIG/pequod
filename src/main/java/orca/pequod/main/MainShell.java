@@ -58,6 +58,8 @@ import edu.emory.mathcs.backport.java.util.Collections;
  */
 
 public class MainShell {
+	public static final String buildVersion = MainShell.class.getPackage().getImplementationVersion();
+	public static final String aboutText = "Pequod Orca Shell " + (buildVersion == null? "Eclipse build" : buildVersion) + " (c) 2012 RENCI/UNC Chapel Hill " ;
 	public static final String EXIT_COMMAND = "exit";
 	public static final String HISTORY_COMMAND = "history";
 	private static final String PEQUOD_DEAFULT_PROMPT_PROP = "pequod.default.prompt";
@@ -216,7 +218,8 @@ public class MainShell {
 	
 	private void printHelp() {
 		// collect help messages from the commands
-		String ret = "Pequod Orca Shell (c) 2012 RENCI/UNC Chapel Hill\nPequod supports history and command auto-completion.\nAvailable commands:\n";
+		String ret = aboutText + "\n";
+		ret += "Pequod supports history and command auto-completion.\nAvailable commands:\n";
 		
 		ret += getAllCommandsHelp();
 		ret += "  history: show command history (!<command index> invokes the command)\n";
