@@ -1,5 +1,7 @@
 package orca.pequod.main;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -125,7 +127,7 @@ public class ConnectionCache {
 	 * @param username
 	 * @param password
 	 */
-	public ConnectionCache(List<String> urls, String username, String password) {
+	public ConnectionCache(List<String> urls, String username, String password) throws URISyntaxException {
 		this.username = username;
 		this.password = password;
 		this.activeActors = new HashMap<String, ActorState>();
@@ -134,7 +136,17 @@ public class ConnectionCache {
 		activeConnections = new HashMap<String, ConnectionState>();
 		
 		for (String url: urls) {
-			ConnectionState proxy = new ConnectionState(url, username, password);
+			String u = username;
+			String p = password;
+			URI uri = new URI(url);
+			if (uri.getUserInfo() != null) {
+				u = uri.getUserInfo().split(":")[0];
+				p = (uri.getUserInfo().split(":").length == 1 ? password : uri.getUserInfo().split(":")[1]);
+				url = uri.getScheme() + "://" + uri.getHost(); 
+				url += ":" + uri.getPort();
+				url += uri.getPath();
+			} 
+			ConnectionState proxy = new ConnectionState(url, u, p);
 			checkConnectionErrorState(proxy);
 			if (!proxy.inError) {
 				getBasicContainerData(proxy);
