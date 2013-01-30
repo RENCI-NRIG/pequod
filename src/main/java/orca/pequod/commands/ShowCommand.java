@@ -30,6 +30,7 @@ import orca.manage.IOrcaServerActor;
 import orca.manage.OrcaError;
 import orca.manage.beans.ActorMng;
 import orca.manage.beans.ClientMng;
+import orca.manage.beans.PackageMng;
 import orca.manage.beans.PropertiesMng;
 import orca.manage.beans.PropertyMng;
 import orca.manage.beans.ReservationMng;
@@ -235,6 +236,25 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				} catch (NoSuchElementException e) {
 					// show errors on all actors
 					return getAllActorErrors();
+				}
+			}
+		});
+		
+		subcommands.put("packages", new SubCommand() {
+			public String parse(Scanner l, String last) {
+				try {
+					if (!"for".equals(l.next())) {
+						return null;
+					}
+					try {
+						String url = l.next();
+						return getContainerPackages(url);
+					} catch (NoSuchElementException e) {
+						return null;
+					}
+				} catch (NoSuchElementException e) {
+					// show errors on all actors
+					return getAllContainerPackages();
 				}
 			}
 		});
@@ -846,6 +866,50 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		return ret;
 	}
 	
+	
+	private static String getAllContainerPackages() {
+		String ret = "";
+		for (String c: MainShell.getInstance().getConnectionCache().getContainers()) {
+			ret += "Container: " + c + "\n";
+			ret += getContainerPackages(c);
+		}
+		return ret;
+	}
+	
+	private static String getContainerPackages(String url) {
+		String ret = "";
+		// NOTE: containers cannot be called current so we're ok here	
+		if (CURRENT.equals(url)) { 
+			if (MainShell.getInstance().getConnectionCache().getCurrentContainers() != null) {
+				for (String u: MainShell.getInstance().getConnectionCache().getCurrentContainers()) {
+					if (!CURRENT.equals(u)) {
+						ret += "Container " + u + ":\n";
+						ret += getContainerPackages(u);
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current container not set";
+		}
+		
+		IOrcaContainer proxy = MainShell.getInstance().getConnectionCache().getContainer(url);
+		
+		if (proxy == null)
+			return "ERROR: No connection to container " + url;
+		
+		List<PackageMng> packages = proxy.getPackages();
+		
+		if (packages != null) {
+			for (PackageMng p: packages) {
+				ret += p.getName() + ":" + p.getId() + "\t" + p.getDescription() + "\n";
+			}
+			return ret;
+		}
+		else 
+			return "No packages";
+	}
+	
 	/**
 	 * Get the value of current setting
 	 * @param s
@@ -978,7 +1042,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				ret += "\n";
 			Date st = new Date(res.getStart());
 			Date en = new Date(res.getEnd());
-			ret += "\tStart: " + st + "\tEnd:" + en;
+			ret += "\tStart: " + st + "\tEnd:" + en + "\n";
 		}
 		
 		return ret;
