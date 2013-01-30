@@ -261,7 +261,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 						if (!CURRENT.equals(a)) {
 							ret += "Actor: " + a + "\n";
-							ret += closeReservation(rid, a);
+							ret += closeReservation(rid, a) + "\n";
 						}
 					}
 					return ret;
@@ -279,7 +279,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
 					if (!CURRENT.equals(rrid)) {
 						boolean res = actor.closeReservation(new ReservationID(rrid));
-						ret += "Closed reservation " + rrid + " on " + actorName + " with result " + res;
+						ret += "Closed reservation " + rrid + " on " + actorName + " with result " + res + "\n";
 					}
 				}
 				return ret;
@@ -301,7 +301,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 						if (!CURRENT.equals(a)) {
 							ret += "Actor: " + a + "\n";
-							ret += closeReservation(sliceId, a);
+							ret += closeReservation(sliceId, a) + "\n";
 						}
 					}
 					return ret;
