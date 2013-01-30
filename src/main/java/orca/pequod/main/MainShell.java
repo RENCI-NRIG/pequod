@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,9 +33,8 @@ import org.apache.log4j.PropertyConfigurator;
 import edu.emory.mathcs.backport.java.util.Collections;
 
 /**
- * Pequod works similar to openssl - you can execute individual
- * commands (e.g. openssl x509 <options>) or enter into a shell
- * environment and do it from there:
+ * Pequod is a shell environment for controlling ORCA actors
+ * that supports multiple commands:
  * $ pequod
  * pequod> show [<options>]*
  * 
@@ -108,8 +108,13 @@ public class MainShell {
 		for (String s: containers.split(",")) {
 			containerList.add(s.trim());
 		}
-		
-		cc = new ConnectionCache(containerList, username, password);
+	
+		try {
+			cc = new ConnectionCache(containerList, username, password);
+		} catch (URISyntaxException e) {
+			System.err.println("Unable to connect to specified URLs: check URL syntax.");
+			System.exit(1);
+		}
 		
 		// initialize command set
 		String commandClasses = (String)props.get(PEQUOD_COMMANDS_PROP);
@@ -381,7 +386,7 @@ public class MainShell {
 	}
 	
 	/**
-	 * Returns an unmodifiable map of commands
+	 * Returns a map of commands
 	 * @return
 	 */
 	public Map<String, ICommand> getCommands() {

@@ -40,11 +40,14 @@
 </target>
 
 <target name="install" description="Install pequod onto specified host and unpack for JNLP use">
-	<property name="pequod.zip" value="pequod-4.0-SNAPSHOT.zip"/>
+	<zip destfile="target/pequod.zip" basedir="target/appassembler" />
+	<property name="pequod.zip" value="pequod.zip"/>
 	<property name="pequod.host" value="geni-images.renci.org"/>
-	<property name="pequod.dir" value="/images/webstart/pequod/4.0-SNAPSHOT"/>
+	<property name="pequod.dir" value="/images/webstart/pequod"/>
 	<description>Install pequod onto ${pequod.host} and unpack for JNLP use</description>
 	<scp file="target/${pequod.zip}" todir="${user.name}@${pequod.host}:${pequod.dir}" keyfile="${user.home}/.ssh/id_dsa" />
+<!--
 	<sshexec host="${pequod.host}" username="${user.name}" keyfile="${user.home}/.ssh/id_dsa" command="cd ${pequod.dir}; unzip -o ${pequod.zip}"/>
+-->
 </target>
 </project>
