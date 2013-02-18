@@ -1,4 +1,4 @@
-<project name="Flukes" default="install" basedir=".">
+<project name="Pequod" default="install" basedir=".">
 <macrodef name="unsignjar">
     <attribute name="jar"/>
     <sequential>

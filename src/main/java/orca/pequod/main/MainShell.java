@@ -28,6 +28,7 @@ import orca.pequod.commands.HelpCommand;
 import orca.pequod.commands.ICommand;
 import orca.pequod.util.PropertyLoader;
 
+import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import edu.emory.mathcs.backport.java.util.Collections;
@@ -60,7 +61,7 @@ import edu.emory.mathcs.backport.java.util.Collections;
 
 public class MainShell {
 	public static final String buildVersion = MainShell.class.getPackage().getImplementationVersion();
-	public static final String aboutText = "Pequod Orca Shell " + (buildVersion == null? "Eclipse build" : buildVersion) + " (c) 2012 RENCI/UNC Chapel Hill " ;
+	public static final String aboutText = "Pequod ORCA Shell " + (buildVersion == null? "Eclipse build" : buildVersion) + " (c) 2012-2013 RENCI/UNC Chapel Hill " ;
 	public static final String EXIT_COMMAND = "exit";
 	public static final String HISTORY_COMMAND = "history";
 	private static final String PEQUOD_DEAFULT_PROMPT_PROP = "pequod.default.prompt";
@@ -70,6 +71,7 @@ public class MainShell {
 	private static final String PEQUOD_PASSWORD_PROP = "pequod.password";
 	private static final String PREF_DIR = ".pequod";
 	private static final String PREF_FILE="properties";
+	Logger logger = null;
 
 	
 	protected Map<String, ICommand> commands = new HashMap<String, ICommand>();
@@ -90,15 +92,18 @@ public class MainShell {
 			System.exit(1);
 		}
 
-		if ((props.get(PEQUOD_CONTAINERS_PROP) == null) ||
-				(props.get(PEQUOD_USERNAME_PROP) == null) ||
-				(props.get(PEQUOD_PASSWORD_PROP) == null)) {
+		if ((props.get(PEQUOD_CONTAINERS_PROP) == null)) {
 			System.err.println("ERROR: Unable to determine the list of containers, exiting.");
 			System.exit(1);
 		}
 		
 		// logger 
 		PropertyConfigurator.configure(props);
+		logger = Logger.getLogger(orca.pequod.main.MainShell.class);
+		if (logger == null)
+			System.err.println("Unable to get logger");
+		else
+			logger.info("Logger initialized");
 		
 		// Connection cache
 		String containers = (String)props.get(PEQUOD_CONTAINERS_PROP);
@@ -109,12 +114,7 @@ public class MainShell {
 			containerList.add(s.trim());
 		}
 	
-		try {
-			cc = new ConnectionCache(containerList, username, password);
-		} catch (URISyntaxException e) {
-			System.err.println("Unable to connect to specified URLs: check URL syntax.");
-			System.exit(1);
-		}
+		cc = new ConnectionCache(containerList, username, password, logger);
 		
 		// initialize command set
 		String commandClasses = (String)props.get(PEQUOD_COMMANDS_PROP);
@@ -224,13 +224,14 @@ public class MainShell {
 	
 	private void printHelp() {
 		// collect help messages from the commands
-		String ret = aboutText + "\n";
-		ret += "Pequod supports history and command auto-completion.\nAvailable commands:\n";
+		String ret = aboutText + "\n\n";
+		//ret += "Pequod supports history and command auto-completion.\nAvailable commands:\n";
 		
 		ret += getAllCommandsHelp();
 		ret += "  history: show command history (!<command index> invokes the command)\n";
 		ret += "  exit: Exit from the shell (Ctrl-D or Ctrl-C also works)\n";
 		ret += "Type the entire command, or enter the first word of the command to enter subcommand with intelligent auto-completion (Using TAB).";
+		ret += "\n\n\"It is not down on any map; true places never are.\"\n\t\t-Herman Melville, Moby Dick\n";
 		pw.println(ret);
 	}
 	
@@ -256,14 +257,18 @@ public class MainShell {
 	
 	protected void shutdownActions() {
 		try {
-			System.out.println("\nLogging out of containers");
+			pw.println("\nLogging out of containers");
+			pw.flush();
 			cc.shutdown();
-			System.out.print("Shutting down commands ");
+			pw.print("Shutting down commands ");
+			pw.flush();
 			for (Entry<String, ICommand> cmd: commands.entrySet()) {
-				System.out.print(cmd.getKey() + " ");
+				pw.print(cmd.getKey() + " ");
+				pw.flush();
 				cmd.getValue().shutdown();
 			}
-			System.out.println("\nResetting terminal and exiting. Goodbye.");
+			pw.println("\nResetting terminal and exiting. Goodbye.");
+			pw.flush();
 			TerminalFactory.get().restore();
 			TerminalFactory.reset();
 		} catch (Exception e) {
