@@ -1,0 +1,7 @@
+aux sub-command
+
+	# disconnect from a container
+	aux disconnect <url>
+	
+	# (re)connect to a container (url can be http://username:password@hostname:port/path)
+	aux connect <url>

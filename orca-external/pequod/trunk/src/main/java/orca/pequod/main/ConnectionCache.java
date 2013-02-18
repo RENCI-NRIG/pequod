@@ -2,6 +2,7 @@ package orca.pequod.main;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,6 +24,8 @@ import orca.manage.beans.ResultMng;
 import orca.manage.beans.SliceMng;
 import orca.shirako.common.SliceID;
 import orca.util.ID;
+
+import org.apache.log4j.Logger;
 
 /** takes care of maintaining connections
  * to different containers
@@ -48,6 +51,8 @@ public class ConnectionCache {
 	protected List<ActorMng> lastShowActors;
 	protected List<SliceMng> lastShowSlices;
 	protected List<ReservationMng> lastShowReservations;
+	
+	private Logger logger = null;
 	
 	static class ActorState {
 		ActorMng actor;
@@ -96,7 +101,7 @@ public class ConnectionCache {
 		}		
 	}
 	
-	private void checkConnectionErrorState(ConnectionState proxy) {
+	private synchronized void checkConnectionErrorState(ConnectionState proxy) {
 		
 		if (proxy.inError) {
 			inError = true;
@@ -108,7 +113,7 @@ public class ConnectionCache {
 		}
 	}
 	
-	private void getBasicContainerData(ConnectionState cs) {
+	private synchronized void getBasicContainerData(ConnectionState cs) {
 		// get the names of actors
 		
 		if (!cs.inError) {
@@ -127,68 +132,40 @@ public class ConnectionCache {
 	 * @param username
 	 * @param password
 	 */
-	public ConnectionCache(List<String> urls, String username, String password) throws URISyntaxException {
+	public ConnectionCache(List<String> urls, final String username, final String password, Logger l) {
 		this.username = username;
 		this.password = password;
+		this.logger = l;
 		this.activeActors = new HashMap<String, ActorState>();
 		this.seenSlices = new HashMap<String, ID>();
 		
 		activeConnections = new HashMap<String, ConnectionState>();
 		
-		for (String url: urls) {
-			String u = username;
-			String p = password;
-			URI uri = new URI(url);
-			if (uri.getUserInfo() != null) {
-				u = uri.getUserInfo().split(":")[0];
-				p = (uri.getUserInfo().split(":").length == 1 ? password : uri.getUserInfo().split(":")[1]);
-				url = uri.getScheme() + "://" + uri.getHost(); 
-				url += ":" + uri.getPort();
-				url += uri.getPath();
-			} 
-			ConnectionState proxy = new ConnectionState(url, u, p);
-			checkConnectionErrorState(proxy);
-			if (!proxy.inError) {
-				getBasicContainerData(proxy);
+		List<Thread> threads = new ArrayList<Thread>();
+		
+		for (final String url: urls) {
+			logger.info("Connecting " + url);
+			Thread t = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						connect(url, username, password);
+					} catch (URISyntaxException e) {
+						logger.error("Unable to connect to " + url + " due to " + e);
+					}
+				}
+			});
+			threads.add(t);
+			t.start();
+		}
+		
+		for (Thread t: threads) {
+			try {
+				t.join(5000);
+			} catch (InterruptedException e) {
+				logger.error("Thread was interrupted");
 			}
-			activeConnections.put(url, proxy);
 		}
-	}
-	
-	/**
-	 * Add a container with unique username and password
-	 * @param url
-	 * @param username
-	 * @param password
-	 */
-	public void addContainer(String url, String username, String password) {
-		if (url == null) {
-			return;
-		}
-
-		if (activeConnections.containsKey(url))
-			return;
-		
-		ConnectionState proxy = new ConnectionState(url, username, password);
-		checkConnectionErrorState(proxy);
-		if (!proxy.inError) {
-			getBasicContainerData(proxy);
-			activeConnections.put(url, proxy);
-		}
-	}
-	
-	/**
-	 * Retry a container (if it is ok, does nothing)
-	 * @param url
-	 */
-	public void retryContainer(String url) {
-		if (url == null)
-			return;
-		
-		ConnectionState proxy = new ConnectionState(url, username, password);
-		checkConnectionErrorState(proxy);
-		if (!proxy.inError)
-			activeConnections.put(url, proxy);
 	}
 	
 	/**
@@ -524,12 +501,73 @@ public class ConnectionCache {
 		return ret;
 	}
 	
+	/**
+	 * Disconnect from all containers
+	 */
 	public void shutdown() {
 		// logout from all containers
-		for (String s: activeConnections.keySet()) {
-			ConnectionState cs = activeConnections.get(s);
-			if (cs.proxy != null)
-				cs.proxy.logout();
+		Set<String> acts = new HashSet<String>(activeConnections.keySet());
+		for (String s: acts) {
+			shutdown(s);
+		}
+	}
+	
+	/**
+	 * Disconnect from a specified container
+	 * @param url
+	 */
+	public void shutdown(String url) {
+		if (url == null)
+			return;
+		ConnectionState cs = activeConnections.get(url);
+		if ((cs != null) && (cs.proxy != null)) {
+			for (ActorMng a: cs.proxy.getActorsFromDatabase()) 
+				activeActors.remove(a.getName());
+			cs.proxy.logout();
+			activeConnections.remove(url);
+		}
+	}
+	
+	/**
+	 * Connect to a specified container
+	 * @param url
+	 * @param user
+	 * @param password
+	 */
+	public void connect(final String url, final String user, final String password) throws URISyntaxException {
+		if (url == null)
+			return;
+		
+		String u = username;
+		String p = password;
+		String lurl = url;
+
+		URI uri = new URI(lurl);
+		if (uri.getUserInfo() != null) {
+			u = uri.getUserInfo().split(":")[0];
+			p = (uri.getUserInfo().split(":").length == 1 ? password : uri.getUserInfo().split(":")[1]);
+			lurl = uri.getScheme() + "://" + uri.getHost(); 
+			lurl += ":" + uri.getPort();
+			lurl += uri.getPath();
+		} 
+		
+		synchronized(this) {
+			ConnectionState cs = activeConnections.get(url);
+			if (cs != null)
+				return;
+		}
+		
+		if ((u == null) || (p == null)) 
+			throw new URISyntaxException(lurl, "Username or password is not specified in URL nor globally");
+
+		ConnectionState proxy = new ConnectionState(lurl, u, p);
+		
+		synchronized(this) {
+			checkConnectionErrorState(proxy);
+			if (!proxy.inError) {
+				getBasicContainerData(proxy);
+			}
+			activeConnections.put(lurl, proxy);
 		}
 	}
 	

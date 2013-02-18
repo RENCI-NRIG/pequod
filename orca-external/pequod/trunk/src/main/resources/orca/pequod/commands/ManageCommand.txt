@@ -11,3 +11,4 @@ manage sub-command
 	
 	# remove reservation (previously closed; on any actor)
 	remove reservation <rid>|current actor <actor name>|current
+	

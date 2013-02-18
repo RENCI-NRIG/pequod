@@ -10,6 +10,7 @@
 		<!-- location of signing keystore for jnlp -->
   		<keystorefile>/Users/ibaldin/.ssl/iliabaldine-allcerts.jks</keystorefile>
 		<keystorealias>iliabaldine-ben</keystorealias>
+	    <maven.build.timestamp.format>MM/dd/yyyy HH:mm</maven.build.timestamp.format>
     </properties>
 	<url>http://geni-images.renci.org/webstart/pequod</url>
 	<issueManagement>
@@ -104,7 +105,7 @@
 							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 						</manifest>
 						<manifestEntries>
-							<Implementation-Version>v.${version}.build-${buildNumber}.ts-${timestamp}</Implementation-Version>
+							<Implementation-Version>v.${project.version}.build-${buildNumber} built on ${maven.build.timestamp}</Implementation-Version>
 						</manifestEntries>
 					</archive>
 				</configuration>

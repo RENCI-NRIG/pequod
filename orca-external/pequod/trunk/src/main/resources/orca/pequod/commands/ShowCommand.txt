@@ -12,17 +12,17 @@ show sub-command
 	# show slices
 	show slices for <actor name>|current
 	
-	# show inventory slices (resources that can be delegated)
+	# show inventory slices (resources that can be delegated on AM or broker)
 	show inventory for <broker name>|current
 	
 	# show slice properties
 	show sliceProperties for <slice GUID>|current actor <actor name>|current [type <local|config|request|resource>]
 	
 	# show reservations
-	show reservations for <slice GUID>|current|all actor <actor name>|current [state <closed|active|failed|ticketed|nascent>]
+	show reservations for <slice GUID>|current|all actor <actor name>|current [state <closed|active|failed|ticketed|nascent|all> [ filter "<resource type regex>"]]
 	
 	# show reservation properties
-	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource>]
+	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource> [ filter "<prop name regex>=<prop value regex>"]] 
 	
 	# show users
 	show users [for <container url>|current|all]
