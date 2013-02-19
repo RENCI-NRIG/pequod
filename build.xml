@@ -1,53 +1,21 @@
-<project name="Pequod" default="install" basedir=".">
-<macrodef name="unsignjar">
-    <attribute name="jar"/>
-    <sequential>
-        <!-- Remove any existing signatures from a JAR file. -->
-        <tempfile prefix="usignjar-" destdir="${java.io.tmpdir}" property="temp.file"/>
-        <echo message="Removing signatures from JAR: @{jar}"/>
-        <mkdir dir="${temp.file}"/>
-                
-        <unjar src="@{jar}" dest="${temp.file}">
-            <patternset>
-                <include name="**"/>
-                <exclude name="META-INF/*.SF"/>
-                <exclude name="META-INF/*.DSA"/>
-                <exclude name="META-INF/*.RSA"/>
-            </patternset>
-        </unjar>
-                
-        <delete file="@{jar}" failonerror="true"/>
-                
-        <!-- Touch it in case the file didn't have a manifest.
-             Otherwise the JAR task below will fail if the manifest 
-             file doesn't exist. -->
-        <mkdir dir="${temp.file}/META-INF"/>
-        <touch file="${temp.file}/META-INF/MANIFEST.MF"/>
-                
-        <jar destfile="@{jar}" 
-            basedir="${temp.file}" 
-            includes="**" 
-            manifest="${temp.file}/META-INF/MANIFEST.MF"/>
-                
-        <delete dir="${temp.file}" failonerror="true"/>
-    </sequential>
-</macrodef>
+<project name="Pequod" default="package" basedir=".">
 
-<target name="unsign" description="Unsign bouncycastle jars fetched automatically by maven. Use if jarsigned fails for 'mvn install'" >
-	<unsignjar jar="/Users/ibaldin/.m2/repository/org/bouncycastle/bcprov-ext-jdk15/1.45/bcprov-ext-jdk15-1.45.jar"/>
-	<unsignjar jar="/Users/ibaldin/.m2/repository/bouncycastle/bcprov-jdk16/bcprov-jdk16/145/bcprov-jdk16-145.jar"/>
-	<unsignjar jar="/Users/ibaldin/.m2/repository/com/hp/hpl/jena/arq/2.6.0/arq-2.6.0.jar"/>
+<target name="checkfile1" >
+	<available file="target/appassembler/bin/pequod" property="file.there"/>
 </target>
 
-<target name="install" description="Install pequod onto specified host and unpack for JNLP use">
+<target name="checkfile" depends="checkfile1" unless="file.there">
+	<echo message="Please run 'mvn clean package'"/>
+</target>
+
+<target name="package" description="Package pequod into a zip file in target/" depends="checkfile" if="file.there" >
 	<zip destfile="target/pequod.zip" basedir="target/appassembler" />
+</target>
+
+<target name="install" description="Install pequod onto specified host" depends="package" if="file.there">
 	<property name="pequod.zip" value="pequod.zip"/>
 	<property name="pequod.host" value="geni-images.renci.org"/>
 	<property name="pequod.dir" value="/images/webstart/pequod"/>
-	<description>Install pequod onto ${pequod.host} and unpack for JNLP use</description>
 	<scp file="target/${pequod.zip}" todir="${user.name}@${pequod.host}:${pequod.dir}" keyfile="${user.home}/.ssh/id_dsa" />
-<!--
-	<sshexec host="${pequod.host}" username="${user.name}" keyfile="${user.home}/.ssh/id_dsa" command="cd ${pequod.dir}; unzip -o ${pequod.zip}"/>
--->
 </target>
 </project>
