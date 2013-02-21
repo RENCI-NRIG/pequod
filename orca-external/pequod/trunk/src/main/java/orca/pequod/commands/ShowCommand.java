@@ -29,6 +29,7 @@ import orca.manage.IOrcaAuthority;
 import orca.manage.IOrcaBroker;
 import orca.manage.IOrcaContainer;
 import orca.manage.IOrcaServerActor;
+import orca.manage.IOrcaServiceManager;
 import orca.manage.OrcaError;
 import orca.manage.beans.ActorMng;
 import orca.manage.beans.ClientMng;
@@ -37,6 +38,7 @@ import orca.manage.beans.PropertiesMng;
 import orca.manage.beans.PropertyMng;
 import orca.manage.beans.ReservationMng;
 import orca.manage.beans.SliceMng;
+import orca.manage.beans.UnitMng;
 import orca.manage.beans.UserMng;
 import orca.pequod.main.Constants;
 import orca.pequod.main.MainShell;
@@ -56,6 +58,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		Constants.PropertyType.REQUEST.getName(), 
 		Constants.PropertyType.RESOURCE.getName(), 
 		Constants.PropertyType.CONFIGURATION.getName(),
+		Constants.PropertyType.UNIT.getName(),
 		Constants.ReservationState.ACTIVE.getName(),
 		Constants.ReservationState.ACTIVETICKETED.getName(),
 		Constants.ReservationState.CLOSED.getName(),
@@ -1210,6 +1213,25 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		return getReservationProperties2(rid, actor, s, rm);
 	}
 	
+	private static List<PropertiesMng> getUnitProperties(String rid, IOrcaActor actor) {
+		
+		List<PropertiesMng> uProps = new LinkedList<PropertiesMng>();
+		try {
+			IOrcaServiceManager iosm = (IOrcaServiceManager)actor;
+			List<UnitMng> units = iosm.getUnits(new ReservationID(rid));
+			for(UnitMng unit: units) {
+				PropertiesMng up = unit.getProperties();
+				if (up != null)
+					uProps.add(up);
+			}
+		} catch (ClassCastException e) {
+			;
+		} catch (Exception ee) {
+			;
+		}
+		return uProps;
+	}
+	
 	/**
 	 * Get reservation properties
 	 * @param rid
@@ -1229,6 +1251,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		PropertiesMng rProps = null;
 		PropertiesMng lProps = null;
 		PropertiesMng rsProps = null;
+		List<PropertiesMng> uProps = null;
 		
 		switch(s) {
 		case ALL:
@@ -1236,6 +1259,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			rProps = reservation.getRequestProperties();
 			lProps = reservation.getLocalProperties();
 			rsProps = reservation.getResourceProperties();
+			uProps = getUnitProperties(rid, actor);
 			break;
 		case CONFIGURATION:
 			cProps = reservation.getConfigurationProperties();
@@ -1249,11 +1273,14 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		case REQUEST:
 			rProps = reservation.getRequestProperties();
 			break;
+		case UNIT:
+			uProps = getUnitProperties(rid, actor);
+			break;
 		case UNKNOWN:
 		default:
 			return "ERROR: Unknown property type";
 		}
-
+		
 		ret += reservation.getReservationID() + "\n";
 
 		if (cProps != null) {
@@ -1271,6 +1298,15 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		if (rsProps != null) {
 			ret += printProperties(Constants.PropertyType.RESOURCE, rsProps);
 		}	
+		
+		// get unit properties for this reservation
+		if ((uProps != null) && (uProps.size() > 0)) {
+			int i = 0;
+			for (PropertiesMng pm: uProps) {
+				ret += i++ + " ";
+				ret += printProperties(Constants.PropertyType.UNIT, pm);
+			}
+		}
 		
 		return ret;
 	}

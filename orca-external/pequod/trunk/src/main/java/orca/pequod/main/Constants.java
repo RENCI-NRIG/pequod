@@ -60,6 +60,7 @@ public class Constants {
 		CONFIGURATION("config"),
 		REQUEST("request"),
 		RESOURCE("resource"),
+		UNIT("unit"),
 		ALL("all"),
 		UNKNOWN("unknown");
 		
