@@ -1,7 +1,15 @@
 <project name="Pequod" default="package" basedir=".">
 
+<property name="assy" value="target/appassembler"/>
+<property name="pscript" value="${assy}/bin/pequod" />
+<property name="cscript" value="${assy}/bin/pequod-check" />
+<property name="pequod.zip" value="pequod.zip"/>
+<property name="pequod.tar" value="pequod.tgz"/>
+<property name="pequod.host" value="geni-images.renci.org"/>
+<property name="pequod.dir" value="/images/webstart/pequod"/>
+
 <target name="checkfile1" >
-	<available file="target/appassembler/bin/pequod" property="file.there"/>
+	<available file="${pscript}" property="file.there"/>
 </target>
 
 <target name="checkfile" depends="checkfile1" unless="file.there">
@@ -9,13 +17,15 @@
 </target>
 
 <target name="package" description="Package pequod into a zip file in target/" depends="checkfile" if="file.there" >
-	<zip destfile="target/pequod.zip" basedir="target/appassembler" />
+	<copy file="lib/pequod-check" todir="${assy}/bin" overwrite="true"/>
+	<chmod file="${pscript}" perm="a+rx" />
+	<chmod file="${cscript}" perm="a+rx" />
+	<zip destfile="target/${pequod.zip}" basedir="${assy}" />
+	<tar destfile="target/${pequod.tar}" basedir="${assy}" compression="gzip" />
 </target>
 
 <target name="install" description="Install pequod onto specified host" depends="package" if="file.there">
-	<property name="pequod.zip" value="pequod.zip"/>
-	<property name="pequod.host" value="geni-images.renci.org"/>
-	<property name="pequod.dir" value="/images/webstart/pequod"/>
 	<scp file="target/${pequod.zip}" todir="${user.name}@${pequod.host}:${pequod.dir}" keyfile="${user.home}/.ssh/id_dsa" />
+	<scp file="target/${pequod.tar}" todir="${user.name}@${pequod.host}:${pequod.dir}" keyfile="${user.home}/.ssh/id_dsa" />
 </target>
 </project>
