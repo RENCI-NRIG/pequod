@@ -165,14 +165,26 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					if (!"for".equals(l.next())) {
 						return null;
 					}
+					String actor = l.next();
 					try {
+						if (!"filter".equals(l.next()))
+							return null;
+						String filter = l.next();
 						List<SliceMng> lm = new LinkedList<SliceMng>();
-						String ret = getSlices(l.next(), lm);
+						String ret = getSlices(actor, lm, filter);
+						if (ret == null)
+							return null;
 						MainShell.getInstance().getConnectionCache().setLastShowSlices(lm);
 						ret += "\nTotal: " + lm.size() + " slices";
 						return ret;
 					} catch (NoSuchElementException e) {
-						return null;
+						List<SliceMng> lm = new LinkedList<SliceMng>();
+						String ret = getSlices(actor, lm, null);
+						if (ret == null)
+							return null;
+						MainShell.getInstance().getConnectionCache().setLastShowSlices(lm);
+						ret += "\nTotal: " + lm.size() + " slices";
+						return ret;
 					}
 				} catch (NoSuchElementException e) {
 					return null;
@@ -189,6 +201,8 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					try {
 						List<SliceMng> lm = new LinkedList<SliceMng>();
 						String ret = getInventorySlices(l.next(), lm);
+						if (ret == null)
+							return null;
 						MainShell.getInstance().getConnectionCache().setLastShowSlices(lm);
 						ret += "\nTotal: " + lm.size() + " slices";
 						return ret;
@@ -307,17 +321,23 @@ public class ShowCommand extends CommandHelper implements ICommand {
 								return null;
 							String filter = l.next();
 							String ret = getReservations(sliceId, actorName, Constants.ReservationState.getType(stateName), r, filter);
+							if (ret == null)
+								return null;
 							MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
 							ret += "\nTotal: " + r.size() + " reservations";
 							return ret;
 						} catch (NoSuchElementException e) {
 							String ret = getReservations(sliceId, actorName, Constants.ReservationState.getType(stateName), r, null);
+							if (ret == null)
+								return null;
 							MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
 							ret += "\nTotal: " + r.size() + " reservations";
 							return ret;
 						}
 					} catch (NoSuchElementException e) {
 						String ret = getReservations(sliceId, actorName, Constants.ReservationState.ALL, r, null);
+						if (ret == null)
+							return null;
 						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
 						ret += "\nTotal: " + r.size() + " reservations";
 						return ret;
@@ -343,11 +363,15 @@ public class ShowCommand extends CommandHelper implements ICommand {
 						if (!"type".equals(l.next()))
 							return null;
 						String ret = getReservationProperties(rid, actorName, Constants.PropertyType.getType(l.next()), r);
+						if (ret == null)
+							return null;
 						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
 						ret += "\nTotal: " + r.size() + " reservations";
 						return ret;
 					} catch (NoSuchElementException e) {
 						String ret = getReservationProperties(rid, actorName, Constants.PropertyType.ALL, r);
+						if (ret == null)
+							return null;
 						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
 						ret += "\nTotal: " + r.size() + " reservations";
 						return ret;
@@ -648,16 +672,27 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	/**
 	 * List slices in a particular actor
 	 * @param actorName
+	 * @param lm
+	 * @param filter
 	 * @return
 	 */
-	private static String getSlices(final String actorName, List<SliceMng> lm) {
+	private static String getSlices(final String actorName, List<SliceMng> lm, String filter) {
 		String ret = "";
+		String ffilter = null;
+		
+		if (filter != null) {
+			if (!filter.startsWith("\"") && !filter.endsWith("\""))
+				return null;
+		
+			ffilter = filter.substring(1, filter.length() - 1).trim();
+		}
+		
 		if (CURRENT.equals(actorName)) {
 			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
 				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 					if (!CURRENT.equals(a)) {
 						ret += "Actor " + a + ":\n";
-						ret += getSlices(a, lm);
+						ret += getSlices(a, lm, filter);
 					}
 				}
 				return ret;
@@ -673,9 +708,21 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		if (actor.getSlices() == null)
 			return "ERROR: This actor has no slices";
 		
-		lm.addAll(actor.getSlices());
+		List<SliceMng> slices = actor.getSlices();
+		List<SliceMng> matchSlices;
+		if (ffilter != null) {
+			matchSlices = new ArrayList<SliceMng>();
+			for (SliceMng slice: slices) {
+				if (slice.getName().contains(ffilter) || 
+						slice.getName().matches(ffilter))
+					matchSlices.add(slice);
+			}
+		} else
+			matchSlices = slices;
 		
-		for (SliceMng s: actor.getSlices())
+		lm.addAll(matchSlices);
+		
+		for (SliceMng s: matchSlices)
 			ret += s.getName() + "\t" + s.getSliceID() + "\t" + (s.getResourceType() != null ? s.getResourceType() : "") + "\n";
 		return ret;
 	}
@@ -692,7 +739,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 					if (!CURRENT.equals(a)) {
 						ret += "Actor " + a + ":\n";
-						ret += getSlices(a, lm);
+						ret += getInventorySlices(a, lm);
 					}
 				}
 				return ret;

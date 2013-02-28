@@ -10,7 +10,7 @@ show sub-command
 	show clients for <am name>|<broker name>|current
 	
 	# show slices
-	show slices for <actor name>|current
+	show slices for <actor name>|current [filter "<slice name regex>"]
 	
 	# show inventory slices (resources that can be delegated on AM or broker)
 	show inventory for <broker name>|current
