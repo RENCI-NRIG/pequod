@@ -7,3 +7,7 @@ $ sh target/appassembler/bin/pequod
 
 First time you run it will give you a template for a properties file to put in $HOME/.pequod/
 
+$ ant install
+
+will push it to geni-images
+
