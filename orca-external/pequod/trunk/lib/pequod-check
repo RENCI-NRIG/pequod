@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# check the length of the file at the URL vs file here
+# if file here is missing, download anyway
+
+DLFLAG=false
+URL=http://geni-images.renci.org/webstart/pequod/pequod.zip
+
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+if [ -z "$MY_PATH" ] ; then
+  # error; for some reason, the path is not accessible
+  # to the script (e.g. permissions re-evaled after suid)
+  echo "Unable to determine location of script; exiting..."
+  exit 1  # fail
+fi
+
+ZIPFILE="$MY_PATH/../pequod.zip"
+TARFILE="$MY_PATH/../pequod.tgz"
+
+if [ ! -e $ZIPFILE ]; then
+	DLFLAG=true
+else
+	# check file size
+	OSXSTAT='stat -f "%z"'
+	LNXSTAT='stat -c "%s"'
+
+	FSIZE=`$LNXSTAT $ZIPFILE 2>/dev/null`
+
+	if [ "$?" -eq "1" ]; then
+		FSIZE=`$OSXSTAT $ZIPFILE 2>/dev/null`
+		if [ "$?" -eq "1" ]; then
+			echo "Unable to stat file, exiting..."
+			exit 1
+		fi
+	fi
+	FSIZE="${FSIZE%\"}"
+	FSIZE="${FSIZE#\"}"
+
+	# curl adds \r\n, so need to remove it
+	RFSIZE=`curl -I $URL 2>&1 | grep Content-Length | tr -d '\r' | awk '{print $2}'`
+
+	if [ "$FSIZE" -ne "$RFSIZE" ]; then
+		DLFLAG=true
+	fi
+fi
+
+if [ "$DLFLAG" = "false" ]; then
+	echo "Pequod is up to date"
+	exit 0
+fi
+
+echo -n "Downloading pequod ... "
+curl -s $URL  > $ZIPFILE
+echo -n "installing ... "
+
+unzip -qq -o $ZIPFILE -d $MY_PATH/../
+#tar -zxpf $TARFILE -C $MY_PATH/../
+
+echo "finished"

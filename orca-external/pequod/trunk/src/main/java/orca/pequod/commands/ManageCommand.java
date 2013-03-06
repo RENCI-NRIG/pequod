@@ -313,7 +313,20 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
 		if (actor == null)
 			return "ERROR: Actor " + actorName + " does not exist";
-		
+
+		if (CURRENT.equals(sliceId)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
+				for (String slice: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
+					if (!CURRENT.equals(slice)) {
+						boolean res = actor.closeReservations(new SliceID(slice));
+						ret += "Closed slice " + slice + " on " + actorName + " with result " + res + "\n";
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current slice not set";
+		}
 		boolean res = actor.closeReservations(new SliceID(sliceId));
 		
 		return "Closed slice " + sliceId + " on " + actorName + " with result " + res;
@@ -340,6 +353,20 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
 		if (actor == null)
 			return "ERROR: Actor " + actorName + " does not exist";
+		
+		if (CURRENT.equals(rid)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentReservationIds() != null) {
+				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
+					if (!CURRENT.equals(rrid)) {
+						boolean res = actor.removeReservation(new ReservationID(rrid));
+						ret += "Removed reservation " + rrid + " on " + actorName + " with result " + res + "\n";
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current reservation not set";
+		} 
 		
 		boolean res = actor.removeReservation(new ReservationID(rid));
 		
