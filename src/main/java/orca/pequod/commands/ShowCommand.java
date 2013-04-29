@@ -850,12 +850,15 @@ public class ShowCommand extends CommandHelper implements ICommand {
 						return ret;
 				}
 				return ret;
+			default:
+					// no UNIT properties on slices
+					return "";
 			}
 		}
 		
 		if (!fired)
 			return "ERROR: No such slice  in this actor";
-	
+		
 		for (PropertyMng p: props.getProperty()) {
 			ret += "\t" + p.getName() + " = " + p.getValue() + "\n";
 		}
