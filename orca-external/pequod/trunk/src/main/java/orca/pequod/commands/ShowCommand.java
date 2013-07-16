@@ -1126,7 +1126,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					continue;
 			}
 			rm.add(res);
-			ret += res.getReservationID() + "\t" + actor.getName() + "\n\t" + 
+			ret += res.getReservationID() + "\t" + actor.getName() + "\n\t" + "Slice: " + sliceId + "\n\t" +
 			res.getUnits() + "\t" + res.getResourceType() + "\t[ " + Constants.ReservationState.getState(res.getState()) +", " + 
 			Constants.ReservationState.getState(res.getPendingState()) + "]\t\n";
 			ret += "\tNotices: " + res.getNotices().trim();
