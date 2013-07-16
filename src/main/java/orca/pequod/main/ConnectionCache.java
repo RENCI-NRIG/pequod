@@ -521,8 +521,11 @@ public class ConnectionCache {
 			return;
 		ConnectionState cs = activeConnections.get(url);
 		if ((cs != null) && (cs.proxy != null)) {
-			for (ActorMng a: cs.proxy.getActorsFromDatabase()) 
-				activeActors.remove(a.getName());
+			List<ActorMng> aa = cs.proxy.getActorsFromDatabase();
+			if (aa != null) {
+				for (ActorMng a: aa) 
+					activeActors.remove(a.getName());
+			}
 			cs.proxy.logout();
 			activeConnections.remove(url);
 		}
