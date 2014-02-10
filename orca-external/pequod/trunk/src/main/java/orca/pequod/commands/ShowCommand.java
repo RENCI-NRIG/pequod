@@ -1054,7 +1054,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
 				for (String ss: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
 					if (!CURRENT.equals(ss)) {
-						ret += "Resevations for slice " + ss + ":\n";
+						ret += "Reservations for slice " + ss + ":\n";
 						ret += getReservations2(ss, actor, s, rm, filter);
 					}
 				}
