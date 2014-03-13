@@ -117,7 +117,27 @@ public class ConnectionCache {
 		// get the names of actors
 		
 		if (!cs.inError) {
-			for (ActorMng a: cs.proxy.getActorsFromDatabase()) {
+			int retries = 3;
+			List<ActorMng> acs = null;
+			// to deal with XML bug, try a few times
+			while(retries > 0) {
+				try {
+					acs = cs.proxy.getActorsFromDatabase();
+					break;
+				} catch (Exception e) {
+					// retry a few times
+					retries--;
+					try {
+						Thread.sleep(100);
+					} catch (Exception ee) {
+						;
+					}
+				}
+			}
+			if (acs == null)
+				throw new RuntimeException("Unable to retrieve actor list");
+			
+			for (ActorMng a: acs) {
 				// insert under name and guid 
 				ActorState as = new ActorState(a, cs);
 				activeActors.put(a.getName(), as);
