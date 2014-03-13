@@ -88,7 +88,7 @@ public class FileCommand extends CommandHelper implements ICommand {
 		// TODO Auto-generated method stub
 	}
 
-	private static String executeFile(String fName) {
+	public static String executeFile(String fName) {
 		String ret = "";
 		try {
 			FileReader fr = new FileReader(new File(fName));

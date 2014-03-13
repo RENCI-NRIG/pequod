@@ -7,23 +7,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
 import jline.console.completer.Completer;
 import jline.console.completer.StringsCompleter;
+import orca.pequod.commands.FileCommand;
 import orca.pequod.commands.HelpCommand;
 import orca.pequod.commands.ICommand;
 import orca.pequod.util.PropertyLoader;
@@ -61,7 +61,7 @@ import edu.emory.mathcs.backport.java.util.Collections;
 
 public class MainShell {
 	public static final String buildVersion = MainShell.class.getPackage().getImplementationVersion();
-	public static final String aboutText = "Pequod ORCA Shell " + (buildVersion == null? "Eclipse build" : buildVersion) + " (c) 2012-2013 RENCI/UNC Chapel Hill " ;
+	public static final String aboutText = "Pequod ORCA Shell " + (buildVersion == null? "Eclipse build" : buildVersion) + " (c) 2012-2014 RENCI/UNC Chapel Hill " ;
 	public static final String EXIT_COMMAND = "exit";
 	public static final String HISTORY_COMMAND = "history";
 	private static final String PEQUOD_DEAFULT_PROMPT_PROP = "pequod.default.prompt";
@@ -72,7 +72,6 @@ public class MainShell {
 	private static final String PREF_DIR = ".pequod";
 	private static final String PREF_FILE="properties";
 	Logger logger = null;
-
 	
 	protected Map<String, ICommand> commands = new HashMap<String, ICommand>();
 	protected Properties props;
@@ -82,6 +81,8 @@ public class MainShell {
 	protected String topPrompt;
 	protected ICommand subCommand = null;
 	protected ConnectionCache cc;
+	
+	private static boolean withShell = true;
 	
 	private MainShell() {
 		
@@ -119,6 +120,9 @@ public class MainShell {
 		// initialize command set
 		String commandClasses = (String)props.get(PEQUOD_COMMANDS_PROP);
 		initCommands(commandClasses.split(","));
+		
+		if (!withShell)
+			return;
 		
 		// Init terminal
 		TerminalFactory.configure(TerminalFactory.AUTO);
@@ -195,8 +199,15 @@ public class MainShell {
     	}
     }
 	
-	private static MainShell instance = new MainShell();
+	private static MainShell instance = null;
+	
+	/**
+	 * The instance gets created the first time you call this
+	 * @return
+	 */
 	public static MainShell getInstance() {
+		if (instance == null)
+			instance = new MainShell();
 		return instance;
 	}
 	
@@ -229,7 +240,8 @@ public class MainShell {
 		
 		ret += getAllCommandsHelp();
 		ret += "  history: show command history (!<command index> invokes the command)\n";
-		ret += "  exit: Exit from the shell (Ctrl-D or Ctrl-C also works)\n";
+		ret += "  exit: Exit from the shell (Ctrl-D or Ctrl-C also works)\n\n";
+		ret += "  execute with -f <filename> to run a script non-interactively\n\n";
 		ret += "Type the entire command, or enter the first word of the command to enter subcommand with intelligent auto-completion (Using TAB).";
 		ret += "\n\n\"It is not down on any map; true places never are.\"\n\t\t-Herman Melville, Moby Dick\n";
 		pw.println(ret);
@@ -303,6 +315,57 @@ public class MainShell {
 	
 	public ICommand getSubCommand() {
 		return subCommand;
+	}
+	
+	protected String parseAndExecute(String s) {
+		
+		if (s != null) {
+			// parse it out
+			Scanner scanner = new Scanner(s);
+			String first = null;
+			try {
+				first = scanner.next().trim();
+			} catch (NoSuchElementException e) {
+				;
+			}
+			ICommand cmd = commands.get(first);
+			if (cmd == null) {
+				if (EXIT_COMMAND.equals(first)) {
+					return "";
+				} else if (HISTORY_COMMAND.equals(first)) {
+					return history_print();
+				} else if (!"".equals(s)) {
+					return "ERROR: Syntax error.";
+				}
+			}
+			
+			if (cmd != null) {
+				try {
+					if (cmd.getCommandName().equals(HelpCommand.COMMAND_NAME)) {
+						return cmd.parseLine(s);
+					} else {
+						// is there anything following it?
+						scanner.next();
+						// execute command
+						return cmd.parseLine(s);
+					}
+				} catch (NoSuchElementException e) {
+					// enter subcommand
+					if (!cmd.equals(subCommand)) {
+						subCommand = cmd;
+					} else {
+						return cmd.parseLine(s);
+					}
+				}
+			}
+		} else {
+			// exit or pop one level up
+			if (subCommand != null)
+				return "";
+			else
+				System.exit(0);
+		}
+		return null;
 	}
 	
 	protected String readLine() throws IOException {
@@ -400,17 +463,32 @@ public class MainShell {
 	
 	public static void main(String[] argv) {
 		
-		MainShell ms = MainShell.getInstance();
+		if (argv.length == 0) {
+			MainShell ms = MainShell.getInstance();
+
+			ms.addShutDownHandler();
+
+			ms.printHelp();
+
+			try {
+				while(true)
+					ms.readLine();
+			} catch(IOException ioe) {
+				;
+			}
+			System.exit(0);
+		}
 		
-		ms.addShutDownHandler();
-		
-		ms.printHelp();
-		
-		try {
-			while(true)
-				ms.readLine();
-		} catch(IOException ioe) {
-			;
+		if ((argv.length == 2) && ("-f".equals(argv[0]))){
+			withShell = false;
+
+			MainShell.getInstance();
+			
+			System.out.println(FileCommand.executeFile(argv[1]));
+			
+		} else {
+			System.err.println("ERROR: Invalid arguments, exiting.");
+			System.exit(1);
 		}
 	}
 }

@@ -1119,22 +1119,24 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			break;
 		}
 		
-		for (ReservationMng res: reservations) {
-			// only include reservations matching a property filter
-			if ((ffilter != null) && (ffilter.length() > 0)) {
-				if (!res.getResourceType().contains(ffilter) && !res.getResourceType().matches(ffilter))
-					continue;
+		if (reservations != null) {
+			for (ReservationMng res: reservations) {
+				// only include reservations matching a property filter
+				if ((ffilter != null) && (ffilter.length() > 0)) {
+					if (!res.getResourceType().contains(ffilter) && !res.getResourceType().matches(ffilter))
+						continue;
+				}
+				rm.add(res);
+				ret += res.getReservationID() + "\t" + actor.getName() + "\n\t" + "Slice: " + sliceId + "\n\t" +
+				res.getUnits() + "\t" + res.getResourceType() + "\t[ " + Constants.ReservationState.getState(res.getState()) +", " + 
+				Constants.ReservationState.getState(res.getPendingState()) + "]\t\n";
+				ret += "\tNotices: " + res.getNotices().trim();
+				if (!res.getNotices().trim().endsWith("\n")) 
+					ret += "\n";
+				Date st = new Date(res.getStart());
+				Date en = new Date(res.getEnd());
+				ret += "\tStart: " + st + "\tEnd:" + en + "\n";
 			}
-			rm.add(res);
-			ret += res.getReservationID() + "\t" + actor.getName() + "\n\t" + "Slice: " + sliceId + "\n\t" +
-			res.getUnits() + "\t" + res.getResourceType() + "\t[ " + Constants.ReservationState.getState(res.getState()) +", " + 
-			Constants.ReservationState.getState(res.getPendingState()) + "]\t\n";
-			ret += "\tNotices: " + res.getNotices().trim();
-			if (!res.getNotices().trim().endsWith("\n")) 
-				ret += "\n";
-			Date st = new Date(res.getStart());
-			Date en = new Date(res.getEnd());
-			ret += "\tStart: " + st + "\tEnd:" + en + "\n";
 		}
 		
 		return ret;
