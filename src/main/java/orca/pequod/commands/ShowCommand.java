@@ -48,6 +48,8 @@ import orca.shirako.common.SliceID;
 import org.apache.commons.lang.text.StrSubstitutor;
 
 public class ShowCommand extends CommandHelper implements ICommand {
+	private static final String FILTER_VAL = "val";
+	private static final String FILTER_KEY = "key";
 	public static final String COMMAND_NAME="show";
 	public static final int LOGCHUNKSIZE = 1024*32;
 	private static String[] thirdField = {"for"};
@@ -169,7 +171,12 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					try {
 						if (!"filter".equals(l.next()))
 							return null;
-						String filter = l.next();
+						String filter = null;
+						try {
+							filter = l.next();
+						} catch (NoSuchElementException ee) {
+							return null;
+						}
 						List<SliceMng> lm = new LinkedList<SliceMng>();
 						String ret = getSlices(actor, lm, filter);
 						if (ret == null)
@@ -362,14 +369,40 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					try {
 						if (!"type".equals(l.next()))
 							return null;
-						String ret = getReservationProperties(rid, actorName, Constants.PropertyType.getType(l.next()), r);
-						if (ret == null)
+						Constants.PropertyType propType = null;
+						try {
+							propType = Constants.PropertyType.getType(l.next());
+						} catch (NoSuchElementException ee) {
 							return null;
-						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
-						ret += "\nTotal: " + r.size() + " reservations";
-						return ret;
+						}
+						try {
+							if (!"filter".equals(l.next()))
+								return null;
+							String filter = null;
+							try {
+								filter = l.next();
+							} catch (NoSuchElementException ee) {
+								return null;
+							}
+							Map<String, String> filterMap = getFilterMap(filter);
+							if (filterMap == null)
+								return null;
+							String ret = getReservationProperties(rid, actorName, propType, r, filterMap);
+							if (ret == null)
+								return null;
+							MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
+							ret += "\nTotal: " + r.size() + " reservations";
+							return ret;
+						} catch (NoSuchElementException ee) {
+							String ret = getReservationProperties(rid, actorName, propType, r, null);
+							if (ret == null)
+								return null;
+							MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
+							ret += "\nTotal: " + r.size() + " reservations";
+							return ret;
+						}
 					} catch (NoSuchElementException e) {
-						String ret = getReservationProperties(rid, actorName, Constants.PropertyType.ALL, r);
+						String ret = getReservationProperties(rid, actorName, Constants.PropertyType.ALL, r, null);
 						if (ret == null)
 							return null;
 						MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
@@ -681,7 +714,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		String ffilter = null;
 		
 		if (filter != null) {
-			if (!filter.startsWith("\"") && !filter.endsWith("\""))
+			if (!filter.startsWith("\"") || !filter.endsWith("\""))
 				return null;
 		
 			ffilter = filter.substring(1, filter.length() - 1).trim();
@@ -1029,6 +1062,12 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 */
 	private static String getReservations(final String sliceId, final String actorName, final Constants.ReservationState s, 
 			List<ReservationMng> rm, final String filter) {
+		
+		if (filter != null) {
+			if (!filter.startsWith("\"") || !filter.endsWith("\""))
+				return null;
+		}
+		
 		String ret = "";
 		
 		if (CURRENT.equals(actorName)) {
@@ -1091,9 +1130,6 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		String ffilter = null;
 		
 		if (filter != null) {
-			if (!filter.startsWith("\"") && !filter.endsWith("\""))
-				return null;
-		
 			ffilter = filter.substring(1, filter.length() - 1).trim();
 		}
 		
@@ -1143,67 +1179,15 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	}
 	
 	/**
-	 * Get filtered properties of a reservation
-	 * @param res
-	 * @param actor
-	 * @param s - type of property
+	 * Parse the filter into a map
 	 * @param filter
 	 * @return
 	 */
-	private static List<PropertyMng> getFilteredProperties(ReservationMng reservation, IOrcaActor actor, Constants.PropertyType s, String filter) {
-		if (reservation == null)
-			return null;
-		
-		PropertiesMng cProps = null;
-		PropertiesMng rProps = null;
-		PropertiesMng lProps = null;
-		PropertiesMng rsProps = null;
-		
-		switch(s) {
-		case ALL:
-			cProps = reservation.getConfigurationProperties();
-			rProps = reservation.getRequestProperties();
-			lProps = reservation.getLocalProperties();
-			rsProps = reservation.getResourceProperties();
-			break;
-		case CONFIGURATION:
-			cProps = reservation.getConfigurationProperties();
-			break;
-		case LOCAL:
-			lProps = reservation.getLocalProperties();
-			break;
-		case RESOURCE:
-			rsProps = reservation.getResourceProperties();
-			break;
-		case REQUEST:
-			rProps = reservation.getRequestProperties();
-			break;
-		case UNKNOWN:
-		default:
-			return null;
-		}
-		
-		List<PropertyMng> ret = new ArrayList<PropertyMng>();
-		
-		ret.addAll(getFilteredProperties(cProps.getProperty(), filter));
-		ret.addAll(getFilteredProperties(rProps.getProperty(), filter));
-		ret.addAll(getFilteredProperties(lProps.getProperty(), filter));
-		ret.addAll(getFilteredProperties(rsProps.getProperty(), filter));
-		
-		return ret;
-	}
-	
-	/**
-	 * Filter properties based on name or value
-	 * @param props
-	 * @param filter
-	 * @return
-	 */
-	private static List<PropertyMng> getFilteredProperties(List<PropertyMng> props, String filter) {
+	private static Map<String, String> getFilterMap(String filter) {
 		if (filter == null)
-			return props;
+			return null;
 		
-		if (!filter.startsWith("\"") && !filter.endsWith("\""))
+		if (!filter.startsWith("\"") || !filter.endsWith("\""))
 			return null;
 		
 		filter = filter.substring(1, filter.length() - 1).trim();
@@ -1220,11 +1204,10 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		if ((pName.length() == 0) && ((pVal == null) || (pVal.length() == 0)))
 			return null;
 		
-		List<PropertyMng> ret = new ArrayList<PropertyMng>();
-		for(PropertyMng prop: props) {
-			if (prop.getName().contains(pName) || prop.getName().matches(pName))
-				ret.add(prop);
-		}
+		HashMap<String, String> ret = new HashMap<String, String>();
+		ret.put(FILTER_KEY, pName);
+		ret.put(FILTER_VAL, pVal);
+
 		return ret;
 	}
 	
@@ -1235,7 +1218,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @param s
 	 * @return
 	 */
-	private static String getReservationProperties(String rid, String actorName, Constants.PropertyType s, List<ReservationMng> rm) {
+	private static String getReservationProperties(String rid, String actorName, Constants.PropertyType s, List<ReservationMng> rm, Map<String, String> filter) {
 		String ret = "";
 		
 		if (CURRENT.equals(actorName)) {
@@ -1244,7 +1227,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 						if (!CURRENT.equals(a)) {
 							ret += "Actor " + a + ":\n";
-							ret += getReservationProperties(rid, a, s, rm);
+							ret += getReservationProperties(rid, a, s, rm, filter);
 						}
 					}
 					return ret;
@@ -1262,7 +1245,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
 					if (!CURRENT.equals(rrid)) {
 						ret += "Reservation " + rrid + ":\n";
-						ret += getReservationProperties2(rrid, actor, s, rm);
+						ret += getReservationProperties2(rrid, actor, s, rm, filter);
 					}
 				}
 				return ret;
@@ -1271,7 +1254,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				return "ERROR: Current reservation not set";
 		} 
 		
-		return getReservationProperties2(rid, actor, s, rm);
+		return getReservationProperties2(rid, actor, s, rm, filter);
 	}
 	
 	private static List<PropertiesMng> getUnitProperties(String rid, IOrcaActor actor) {
@@ -1300,7 +1283,7 @@ public class ShowCommand extends CommandHelper implements ICommand {
 	 * @param s
 	 * @return
 	 */
-	private static String getReservationProperties2(String rid, IOrcaActor actor, Constants.PropertyType s, List<ReservationMng> rm) {
+	private static String getReservationProperties2(String rid, IOrcaActor actor, Constants.PropertyType s, List<ReservationMng> rm, Map<String, String> filter) {
 		String ret = "";
 		
 		ReservationMng reservation = actor.getReservation(new ReservationID(rid));
@@ -1342,22 +1325,24 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			return "ERROR: Unknown property type";
 		}
 		
+		rm.add(reservation);
+		
 		ret += reservation.getReservationID() + "\n";
 
 		if (cProps != null) {
-			ret += printProperties(Constants.PropertyType.CONFIGURATION, cProps);
+			ret += printProperties(Constants.PropertyType.CONFIGURATION, cProps, filter);
 		}
 		
 		if (lProps != null) {
-			ret += printProperties(Constants.PropertyType.LOCAL, lProps);
+			ret += printProperties(Constants.PropertyType.LOCAL, lProps, filter);
 		}
 		
 		if (rProps != null) {
-			ret += printProperties(Constants.PropertyType.REQUEST, rProps);
+			ret += printProperties(Constants.PropertyType.REQUEST, rProps, filter);
 		}
 		
 		if (rsProps != null) {
-			ret += printProperties(Constants.PropertyType.RESOURCE, rsProps);
+			ret += printProperties(Constants.PropertyType.RESOURCE, rsProps, filter);
 		}	
 		
 		// get unit properties for this reservation
@@ -1365,14 +1350,14 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			int i = 0;
 			for (PropertiesMng pm: uProps) {
 				ret += i++ + " ";
-				ret += printProperties(Constants.PropertyType.UNIT, pm);
+				ret += printProperties(Constants.PropertyType.UNIT, pm, filter);
 			}
 		}
 		
 		return ret;
 	}
 	
-	private static String printProperties(Constants.PropertyType tt, PropertiesMng props) {
+	private static String printProperties(Constants.PropertyType tt, PropertiesMng props, Map<String, String> filter) {
 		if (props == null)
 			return null;
 
@@ -1380,10 +1365,32 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		List<PropertyMng> l = props.getProperty();
 		if (l != null) {
 			for (PropertyMng pm: l) {
-				ret += "\t" + pm.getName() + " = " + pm.getValue() + "\n"; 
+				if (filter == null)
+					ret += "\t" + pm.getName() + " = " + pm.getValue() + "\n"; 
+				else {
+					boolean flag = false;
+					if ((filter.get(FILTER_KEY) != null) && (filter.get(FILTER_VAL) != null))
+						flag = dualMatch(pm, filter.get(FILTER_KEY), filter.get(FILTER_VAL));
+					else if ((filter.get(FILTER_KEY) != null) || (filter.get(FILTER_VAL) != null))
+						flag = singleMatch(pm, filter.get(FILTER_KEY));
+					if (flag)
+						ret += "\t" + pm.getName() + " = " + pm.getValue() + "\n"; 
+				}
 			}
 		}
 		return ret;
+	}
+	
+	private static boolean dualMatch(PropertyMng pm, String key, String val) {
+		if (pm.getName().equals(key) && pm.getValue().contains(val))
+			return true;
+		return false;
+	}
+	
+	private static boolean singleMatch(PropertyMng pm, String filter) {
+		if (pm.getName().contains(filter) || pm.getValue().contains(filter) || pm.getValue().matches(filter))
+			return true;
+		return false;
 	}
 	
 	private static String printLogTail(int lines) {
@@ -1394,8 +1401,9 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		
 		if (logFile == null) 
 			return "Unable to find logfile";
+		RandomAccessFile raf = null;
 		try {
-			RandomAccessFile raf = new RandomAccessFile(new File(logFile), "r");
+			raf = new RandomAccessFile(new File(logFile), "r");
 			
 			// read a chunk of file
 			final int chunkSize = LOGCHUNKSIZE;
@@ -1416,8 +1424,9 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			
 				long readLen = raf.read(buf, 0, (int)(end - start));
 					
-				if (readLen < 0)
+				if (readLen < 0) {
 					return "Unable to read logfile";
+				}
 					
 			}
 			
@@ -1434,6 +1443,13 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			return "Unable to open logfile: " + e;
 		} catch (IOException e) {
 			return "Unable to read logfile: " + e;
+		} finally {
+			try {
+				if (raf != null)
+					raf.close();
+			} catch (Exception io) {
+				;
+			}
 		}
 	}
 	
