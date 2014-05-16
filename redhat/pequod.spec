@@ -1,7 +1,8 @@
 Summary: Pequod - The ORCA IAAS Distributed Command Shell
 Name: pequod
 Version: 4.0
-Release: 0.1.alpha
+Release: 1
+BuildArch: noarch
 BuildRoot: %{_builddir}/%{name}-root
 Source: %{name}-%{version}.tgz
 Group: Applications/Communications
@@ -51,5 +52,5 @@ rm -rf $RPM_BUILD_ROOT
 %{homedir}/repo
 
 %changelog
-*Sat Mar 02 2013 Victor J. Orlikowski <vjo@cs.duke.edu>
-- Initial packaging for ExoGENI repo
+*Fri May 16 2014 Victor J. Orlikowski <vjo@cs.duke.edu>
+- Initial revision for Pequod source tree
