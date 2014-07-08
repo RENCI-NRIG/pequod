@@ -24,6 +24,9 @@ show sub-command
 	# show reservation properties
 	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource|unit> [ filter "<prop name regex>=<prop value regex>"]] 
 	
+	# show available resources for this SM on this broker
+	show available for <sm name> actor <broker name>
+	
 	# show users
 	show users [for <container url>|current|all]
 	
