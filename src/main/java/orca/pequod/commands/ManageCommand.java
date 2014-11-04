@@ -1,6 +1,9 @@
 package orca.pequod.commands;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,6 +18,7 @@ import jline.console.completer.StringsCompleter;
 import orca.manage.IOrcaActor;
 import orca.manage.IOrcaAuthority;
 import orca.manage.IOrcaBroker;
+import orca.manage.IOrcaServiceManager;
 import orca.manage.beans.ActorMng;
 import orca.manage.beans.ReservationMng;
 import orca.manage.beans.SliceMng;
@@ -26,7 +30,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 	public static String COMMAND_NAME="manage";
 	private static String[] thirdField = {"reservation", "slice"};
 	private static String[] fifthField = {"actor"};
-	private static String[] seventhField = {"from"};
+	private static String[] seventhField = {"from", "date"};
 	
 	private static final String CURRENT = "current";
 	private static final String ALL = "all";
@@ -96,6 +100,38 @@ public class ManageCommand extends CommandHelper implements ICommand {
 					String actorName = l.next();
 					return removeReservation(rid, actorName);
 				} catch (NoSuchElementException e) {
+					return null;
+				}
+			}
+		});
+		
+		subcommands.put("extend", new SubCommand() {
+			public String parse(Scanner l, String last) {
+				try {
+					if (!"reservation".equals(l.next())) {
+						return null;
+					}
+					String rid = l.next();
+					if (!"actor".equals(l.next())) {
+						return null;
+					}
+					String actorName = l.next();
+					if (!"date".equals(l.next())) {
+						return null;
+					}
+					
+					StringBuilder date = new StringBuilder();
+					date.append(l.next());
+					if (!date.toString().startsWith("\""))
+						return null;
+					while(true) {
+						date.append(" ");
+						date.append(l.next());
+						if (date.toString().endsWith("\""))
+							break;
+					}
+					return extendReservation(rid, actorName, date.toString());
+				} catch(NoSuchElementException e) {
 					return null;
 				}
 			}
@@ -371,5 +407,58 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		boolean res = actor.removeReservation(new ReservationID(rid));
 		
 		return "Removed reservation " + rid + " on " + actorName + " with result " + res;
+	}
+	
+	private static String[] dateFormats = { "yyyy-MM-dd HH:mm", "MM/dd/yyyy HH:mm", "MMM d, yyyy HH:mm" };
+	
+	private static String extendReservation(String rid, String actorName, String date) {	
+		IOrcaActor smActor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
+		if (smActor == null) 
+			return "ERROR: Actor " + actorName + " does not exist";
+		IOrcaServiceManager sm = null;
+		try {
+			sm = (IOrcaServiceManager)smActor;
+		} catch (ClassCastException cce) {
+			return "ERROR: Actor " + actorName + " is not an SM. Extending reservation can only be done on an SM";
+		}
+		
+		Date dateAsDate = null;
+		for(String format: dateFormats) {
+			SimpleDateFormat sdf1 = new SimpleDateFormat(format);
+			try {
+				dateAsDate = sdf1.parse(date.replaceAll("\"", ""));
+				break;
+			} catch(ParseException pe) {
+				;
+			}
+		}
+		if (dateAsDate == null)
+			return "ERROR: Unable to parse date " + date;
+		
+		String ret = "";
+		if (CURRENT.equals(rid)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentReservationIds() != null) {
+				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
+					if (!CURRENT.equals(rrid)) {
+						ReservationMng rMng = sm.getReservation(new ReservationID(rrid));
+						Date curEnd = new Date(rMng.getEnd());
+						if (dateAsDate.before(curEnd))
+							return "ERROR: new end date is earlier than current end date";
+						boolean res = sm.extendReservation(new ReservationID(rrid), dateAsDate);
+						ret += "Removed reservation " + rrid + " on " + actorName + " with result " + res + "\n";
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current reservation not set";
+		}
+		
+		ReservationMng rMng = sm.getReservation(new ReservationID(rid));
+		Date curEnd = new Date(rMng.getEnd());
+		if (dateAsDate.before(curEnd))
+			return "ERROR: new end date is earlier than current end date";
+		boolean res = sm.extendReservation(new ReservationID(rid), dateAsDate);
+		return "Extended reservation " + rid + " on " + actorName + " until " + dateAsDate + " with result " + res;
 	}
 }
