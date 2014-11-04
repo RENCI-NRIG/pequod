@@ -12,6 +12,6 @@ manage sub-command
 	# remove reservation (previously closed; on any actor)
 	remove reservation <rid>|current actor <actor name>
 	
-	# extend reservation on an SM
-	extend reservation <rid>|currenct actor <sm name> date <date>
+	# extend reservation on an SM. Supported date formats are "yyyy-MM-dd HH:mm", "MM/dd/yyyy HH:mm", "MMM d, yyyy HH:mm"
+	extend reservation <rid>|currenct actor <sm name> date "<date>"
 	
