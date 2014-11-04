@@ -56,5 +56,7 @@ echo -n "installing ... "
 
 unzip -qq -o $ZIPFILE -d $MY_PATH/../
 #tar -zxpf $TARFILE -C $MY_PATH/../
+ppath=`find $MY_PATH/../ -name pequod`
+chmod a+x $ppath
 
 echo "finished"
