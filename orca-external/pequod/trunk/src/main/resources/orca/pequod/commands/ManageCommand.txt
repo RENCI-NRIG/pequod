@@ -10,5 +10,8 @@ manage sub-command
 	close slice <slice GUID>|current actor <actor name>|current
 	
 	# remove reservation (previously closed; on any actor)
-	remove reservation <rid>|current actor <actor name>|current
+	remove reservation <rid>|current actor <actor name>
+	
+	# extend reservation on an SM
+	extend reservation <rid>|currenct actor <sm name> date <date>
 	
