@@ -12,6 +12,9 @@ show sub-command
 	# show slices
 	show slices for <actor name>|current [filter "<slice name regex>"]
 	
+	# show dead slices (all reservations failed/closed)
+	show deadslices for <actor name>|current
+	
 	# show inventory slices (resources that can be delegated on AM or broker)
 	show inventory for <broker name>|current
 	
