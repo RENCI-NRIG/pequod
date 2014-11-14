@@ -91,14 +91,19 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		subcommands.put("remove", new SubCommand() {
 			public String parse(Scanner l, String last) {
 				try {
-					if (!"reservation".equals(l.next())) {
+					String object = l.next();
+					if ((!"reservation".equals(object)) &&
+							(!"slice".equals(object))){
 						return null;
 					}
-					String rid = l.next();
+					String ridOrSlice = l.next();
 					if (!"actor".equals(l.next()))
 						return null;
 					String actorName = l.next();
-					return removeReservation(rid, actorName);
+					if ("reservation".equals(object))
+						return removeReservation(ridOrSlice, actorName);
+					else 
+						return removeSlice(ridOrSlice, actorName);
 				} catch (NoSuchElementException e) {
 					return null;
 				}
@@ -409,6 +414,34 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		return "Removed reservation " + rid + " on " + actorName + " with result " + res;
 	}
 	
+	private static String removeSlice(String sliceId, String actorName) {
+		
+		String ret = "";
+
+		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
+		if (actor == null)
+			return "ERROR: Actor " + actorName + " does not exist";
+		
+		if (CURRENT.equals(sliceId)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
+				for (String sid: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
+					if (!CURRENT.equals(sid)) {
+						boolean res = actor.removeSlice(new SliceID(sid));
+						ret += "Removed slice " + sid + " on " + actorName + " with result " + res + "\n";
+					}
+				}
+				return ret;
+			}
+			else
+				return "ERROR: Current reservation not set";
+		} 
+		
+		boolean res = actor.removeSlice(new SliceID(sliceId));
+		
+		return "Removed slice " + sliceId + " on " + actorName + " with result " + res;
+	}
+	
+	
 	private static String[] dateFormats = { "yyyy-MM-dd HH:mm", "MM/dd/yyyy HH:mm", "MMM d, yyyy HH:mm" };
 	
 	private static String extendReservation(String rid, String actorName, String date) {	
@@ -445,7 +478,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 						if (dateAsDate.before(curEnd))
 							return "ERROR: new end date is earlier than current end date";
 						boolean res = sm.extendReservation(new ReservationID(rrid), dateAsDate);
-						ret += "Removed reservation " + rrid + " on " + actorName + " with result " + res + "\n";
+						ret += "Extended reservation " + rrid + " on " + actorName + " with result " + res + "\n";
 					}
 				}
 				return ret;

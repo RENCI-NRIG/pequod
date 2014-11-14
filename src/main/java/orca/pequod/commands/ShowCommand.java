@@ -208,6 +208,27 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			}
 		});
 		
+		subcommands.put("deadslices", new SubCommand() {
+			public String parse(Scanner l, String last) {
+				try {
+					if (!"for".equals(l.next())) {
+						return null;
+					}
+					String actor = l.next();
+
+					List<SliceMng> lm = new LinkedList<SliceMng>();
+					String ret = getDeadSlices(actor, lm);
+					if (ret == null)
+						return null;
+					MainShell.getInstance().getConnectionCache().setLastShowSlices(lm);
+					ret += "\nTotal: " + lm.size() + " slices";
+					return ret;
+				} catch (NoSuchElementException e) {
+					return null;
+				}
+			}
+		});
+		
 		subcommands.put("inventory", new SubCommand() {
 			public String parse(Scanner l, String last) {
 				try {
@@ -787,6 +808,60 @@ public class ShowCommand extends CommandHelper implements ICommand {
 		} else
 			matchSlices = slices;
 		
+		lm.addAll(matchSlices);
+		
+		for (SliceMng s: matchSlices)
+			sb.append(s.getName() + "\t" + s.getSliceID() + "\t" + (s.getResourceType() != null ? s.getResourceType() : "") + "\n");
+		return sb.toString();
+	}
+	
+	/**
+	 * List dead slices in a particular actor
+	 * @param actorName
+	 * @param lm
+	 * @return
+	 */
+	private static String getDeadSlices(final String actorName, List<SliceMng> lm) {
+		StringBuilder sb = new StringBuilder();
+
+		if (CURRENT.equals(actorName)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+				for (String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+					if (!CURRENT.equals(a)) {
+						sb.append("Actor " + a + ":\n");
+						sb.append(getDeadSlices(a, lm));
+					}
+				}
+				return sb.toString();
+			}
+			else
+				return "ERROR: Current actors not set";
+		}
+		
+		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
+		if (actor == null)
+			return "ERROR: This actor does not exist";
+		
+		if (actor.getSlices() == null)
+			return "ERROR: This actor has no slices";
+		
+		List<SliceMng> slices = actor.getSlices();
+		List<SliceMng> matchSlices = new ArrayList<SliceMng>();
+
+		// make sure all reservations are closed/failed
+		for(SliceMng sl: slices) {
+			List<ReservationMng> reservations = actor.getReservations(new SliceID(sl.getSliceID()));
+			boolean keepSlice = true;
+			for(ReservationMng rm: reservations) {
+				if ((rm.getState() != Constants.ReservationState.CLOSED.getIndex()) && 
+						(rm.getState() != Constants.ReservationState.FAILED.getIndex())) {
+					keepSlice = false;
+					break;
+				}
+			}
+			if (keepSlice)
+				matchSlices.add(sl);
+		}
 		lm.addAll(matchSlices);
 		
 		for (SliceMng s: matchSlices)
