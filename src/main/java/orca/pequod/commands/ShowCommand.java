@@ -1281,8 +1281,10 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					sb.append("\n");
 				Date st = new Date(res.getStart());
 				Date en = new Date(res.getEnd());
-				Date reqEn = new Date(res.getRequestedEnd());
-				sb.append("\tStart: " + st + "\tEnd: " + en + "\tRequested end: " + reqEn + "\n");
+				Date reqEn = null;
+				if (res.getRequestedEnd() > 0)
+					reqEn = new Date(res.getRequestedEnd());
+				sb.append("\tStart: " + st + "\tEnd: " + en + "\t" + (reqEn == null ? "\n" : "Requested end: " + reqEn + "\n"));
 
 			}
 		}
