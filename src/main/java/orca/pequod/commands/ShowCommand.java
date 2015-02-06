@@ -1281,12 +1281,9 @@ public class ShowCommand extends CommandHelper implements ICommand {
 					sb.append("\n");
 				Date st = new Date(res.getStart());
 				Date en = new Date(res.getEnd());
-				sb.append("\tStart: " + st + "\tEnd:" + en + "\n");
-				if (res instanceof TicketReservationMng) {
-					sb.append("\tRenew Time: " + ((TicketReservationMng)res).getRenewTime() + "\n");
-				} else {
-					sb.append("\tRenew Time: not available\n");
-				}
+				Date reqEn = new Date(res.getRequestedEnd());
+				sb.append("\tStart: " + st + "\tEnd: " + en + "\tRequested end: " + reqEn + "\n");
+
 			}
 		}
 		
