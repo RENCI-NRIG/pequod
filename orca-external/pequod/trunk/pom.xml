@@ -4,8 +4,8 @@
 	<groupId>orca</groupId>
 	<artifactId>pequod</artifactId>
 	<name>Pequod</name>
-	<version>4.0-SNAPSHOT</version>
-	<description>Command shell for Orca 4.x+</description>
+	<version>5.0-SNAPSHOT</version>
+	<description>Command shell for Orca 5.x+</description>
 	<properties>
 		<!-- location of signing keystore for jnlp -->
   		<keystorefile>/Users/ibaldin/.ssl/iliabaldine-allcerts.jks</keystorefile>
