@@ -40,17 +40,18 @@ import orca.manage.beans.PropertiesMng;
 import orca.manage.beans.PropertyMng;
 import orca.manage.beans.ReservationMng;
 import orca.manage.beans.SliceMng;
+import orca.manage.beans.TicketReservationMng;
 import orca.manage.beans.UnitMng;
 import orca.manage.beans.UserMng;
 import orca.pequod.main.Constants;
 import orca.pequod.main.MainShell;
 import orca.shirako.common.ConfigurationException;
 import orca.shirako.common.ReservationID;
-import orca.shirako.common.ResourceType;
 import orca.shirako.common.SliceID;
 import orca.shirako.common.meta.ResourcePoolAttributeDescriptor;
 import orca.shirako.common.meta.ResourcePoolDescriptor;
 import orca.shirako.common.meta.ResourceProperties;
+import orca.util.ResourceType;
 
 import org.apache.commons.lang.text.StrSubstitutor;
 
@@ -1281,6 +1282,11 @@ public class ShowCommand extends CommandHelper implements ICommand {
 				Date st = new Date(res.getStart());
 				Date en = new Date(res.getEnd());
 				sb.append("\tStart: " + st + "\tEnd:" + en + "\n");
+				if (res instanceof TicketReservationMng) {
+					sb.append("\tRenew Time: " + ((TicketReservationMng)res).getRenewTime() + "\n");
+				} else {
+					sb.append("\tRenew Time: not available\n");
+				}
 			}
 		}
 		
