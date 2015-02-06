@@ -61,7 +61,7 @@ import edu.emory.mathcs.backport.java.util.Collections;
 
 public class MainShell {
 	public static final String buildVersion = MainShell.class.getPackage().getImplementationVersion();
-	public static final String aboutText = "Pequod ORCA Shell " + (buildVersion == null? "Eclipse build" : buildVersion) + " (c) 2012-2014 RENCI/UNC Chapel Hill " ;
+	public static final String aboutText = "Pequod ORCA Shell " + (buildVersion == null? "Eclipse build" : buildVersion) + " (c) 2012-2015 RENCI/UNC Chapel Hill " ;
 	public static final String EXIT_COMMAND = "exit";
 	public static final String HISTORY_COMMAND = "history";
 	private static final String PEQUOD_DEAFULT_PROMPT_PROP = "pequod.default.prompt";
