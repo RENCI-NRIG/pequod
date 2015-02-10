@@ -24,6 +24,9 @@ show sub-command
 	# show reservations
 	show reservations for <slice GUID>|current|all actor <actor name>|current [state <closed|active|failed|ticketed|nascent|all> [ filter "<resource type regex>"]]
 	
+	# show reservation details (slice, state, resources etc)
+	show reservationDetails for <reservation guid>|current actor <actor name>|current
+	
 	# show reservation properties
 	show reservationProperties for <reservation guid>|current actor <actor name>|current [type <local|config|request|resource|unit> [ filter "<prop name regex>=<prop value regex>"]] 
 	
