@@ -411,6 +411,30 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			}
 		});
 		
+		subcommands.put("reservationDetails", new SubCommand() {
+			public String parse(Scanner l, String last) {
+				try {
+					if (!"for".equals(l.next()))
+						return null;
+					String rid = l.next();
+					if (!"actor".equals(l.next()))
+						return null;
+					String actorName = l.next();
+
+					List<ReservationMng> r = new LinkedList<ReservationMng>();
+
+					String ret = getReservationDetails(rid, actorName, r);
+					if (ret == null)
+						return null;
+					MainShell.getInstance().getConnectionCache().setLastShowReservations(r);
+					ret += "\nTotal: " + r.size() + " reservations";
+					return ret;
+				} catch (NoSuchElementException e) {
+					return null;
+				}
+			}
+		});
+		
 		subcommands.put("reservationProperties", new SubCommand() {
 			public String parse(Scanner l, String last) {
 				try {
@@ -1468,6 +1492,84 @@ public class ShowCommand extends CommandHelper implements ICommand {
 			}
 		}
 		
+		return sb.toString();
+	}
+	
+	/**
+	 * Get simple details about reservations
+	 * @param rid
+	 * @param actorName
+	 * @param rm
+	 * @return
+	 */
+	private static String getReservationDetails(String rid, String actorName, List<ReservationMng> rm) {
+		StringBuilder sb = new StringBuilder();
+		
+		if (CURRENT.equals(actorName)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null)
+				if (MainShell.getInstance().getConnectionCache().getCurrentActors() != null) {
+					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
+						if (!CURRENT.equals(a)) {
+							sb.append("Actor " + a + ":\n");
+							sb.append(getReservationDetails(rid, a, rm));
+						}
+					}
+					return sb.toString();
+				}
+			else
+				return "ERROR: Current actor not set";
+		}
+
+		IOrcaActor actor = MainShell.getInstance().getConnectionCache().getOrcaActor(actorName);
+		if (actor == null)
+			return "ERROR: This actor does not exist";
+
+		if (CURRENT.equals(rid)) {
+			if (MainShell.getInstance().getConnectionCache().getCurrentReservationIds() != null) {
+				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
+					if (!CURRENT.equals(rrid)) {
+						sb.append("Reservation " + rrid + ":\n");
+						sb.append(getReservationDetails2(rrid, actor, rm));
+					}
+				}
+				return sb.toString();
+			}
+			else
+				return "ERROR: Current reservation not set";
+		} 
+		
+		return getReservationDetails2(rid, actor, rm);
+	}
+	
+	/**
+	 * Get simple details about the reservation
+	 * @param rid
+	 * @param actor
+	 * @param rm
+	 * @return
+	 */
+	private static String getReservationDetails2(String rid, IOrcaActor actor, List<ReservationMng> rm) {
+		StringBuilder sb = new StringBuilder();
+		
+		ReservationMng res = actor.getReservation(new ReservationID(rid));
+		if ((res != null) && (rm != null)){
+			rm.add(res);
+			sb.append(res.getReservationID() + "\t" + actor.getName() + "\n\t" +
+					res.getUnits() + "\t" + res.getResourceType() + "\t[ " + Constants.ReservationState.getState(res.getState()) +", " + 
+					Constants.ReservationState.getState(res.getPendingState()) + "]\t\n");
+			sb.append("\tNotices: " + res.getNotices().trim());
+			if (!res.getNotices().trim().endsWith("\n")) 
+				sb.append("\n");
+			Date st = new Date(res.getStart());
+			Date en = new Date(res.getEnd());
+			Date reqEn = null;
+			if (res.getRequestedEnd() > 0)
+				reqEn = new Date(res.getRequestedEnd());
+			sb.append("\tStart: " + st + "\tEnd: " + en + "\t" + (reqEn == null ? "\n" : "Requested end: " + reqEn + "\n"));
+
+
+		}
+
 		return sb.toString();
 	}
 	
