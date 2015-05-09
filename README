@@ -1,4 +1,6 @@
-To build
+Pequod is a command-line shell tool for managing ORCA actors. Most of the help is available in the application.
+
+To build (unless installing from RPM).
 
 $ mvn clean package 
 
@@ -9,5 +11,7 @@ First time you run it will give you a template for a properties file to put in $
 
 $ ant install
 
-will push it to geni-images
+will push it to geni-images.
+
+Pequod comes with a pequod-check script which will update your existing installation to the latest available on-line. 
 
