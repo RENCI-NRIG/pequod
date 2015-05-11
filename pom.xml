@@ -20,7 +20,7 @@
 		<url>http://ci-dev.renci.org/hudson</url>
 	</ciManagement>
 	<scm>
-		<connection>scm:git:https://github.com/RENCI-NRIG/pequod</connection>
+		<connection>scm:git:https://github.com/RENCI-NRIG/pequod.git</connection>
 		<url>https://github.com/RENCI-NRIG/pequod</url>
 	</scm>
 	<organization>
