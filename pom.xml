@@ -108,7 +108,7 @@
 							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 						</manifest>
 						<manifestEntries>
-							<Implementation-Version>v.${project.version}.build-${buildNumber} built on ${maven.build.timestamp}</Implementation-Version>
+							<Implementation-Version>v.${project.version}.build-git${buildNumber} built on ${maven.build.timestamp}</Implementation-Version>
 							<Implementation-Build>$\{buildNumber}</Implementation-Build>
 						</manifestEntries>
 					</archive>
