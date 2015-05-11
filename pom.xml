@@ -22,6 +22,7 @@
 	<scm>
 		<connection>scm:git:https://github.com/RENCI-NRIG/pequod.git</connection>
 		<url>https://github.com/RENCI-NRIG/pequod</url>
+		<tag>master</tag>
 	</scm>
 	<organization>
 		<name>RENCI, The University of North Carolina at Chapel Hill</name>
