@@ -94,6 +94,7 @@
 				<configuration>
 					<doCheck>true</doCheck>
 					<doUpdate>true</doUpdate>
+					<shortRevisionLength>5</shortRevisionLength>
 				</configuration>
 			</plugin>
 			<!--  put the build number in the manifest -->
