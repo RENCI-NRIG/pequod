@@ -317,12 +317,15 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		
 		if (CURRENT.equals(rid)) {
 			if (MainShell.getInstance().getConnectionCache().getCurrentReservationIds() != null) {
+				MainShell.getInstance().setupProgressCounter(MainShell.getInstance().getConnectionCache().getCurrentReservationIds().size(), "Closing Reservation");
 				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
+					MainShell.getInstance().advanceCounter();
 					if (!CURRENT.equals(rrid)) {
 						boolean res = actor.closeReservation(new ReservationID(rrid));
 						ret += "Closed reservation " + rrid + " on " + actorName + " with result " + res + "\n";
 					}
 				}
+				MainShell.getInstance().finishCounter();
 				return ret;
 			}
 			else
@@ -342,7 +345,7 @@ public class ManageCommand extends CommandHelper implements ICommand {
 					for(String a: MainShell.getInstance().getConnectionCache().getCurrentActors()) {
 						if (!CURRENT.equals(a)) {
 							ret += "Actor: " + a + "\n";
-							ret += closeReservation(sliceId, a) + "\n";
+							ret += closeSlice(sliceId, a) + "\n";
 						}
 					}
 					return ret;
@@ -357,12 +360,15 @@ public class ManageCommand extends CommandHelper implements ICommand {
 
 		if (CURRENT.equals(sliceId)) {
 			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
+				MainShell.getInstance().setupProgressCounter(MainShell.getInstance().getConnectionCache().getCurrentSliceIds().size(), "Closing Slice");
 				for (String slice: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
+					MainShell.getInstance().advanceCounter();
 					if (!CURRENT.equals(slice)) {
 						boolean res = actor.closeReservations(new SliceID(slice));
 						ret += "Closed slice " + slice + " on " + actorName + " with result " + res + "\n";
 					}
 				}
+				MainShell.getInstance().finishCounter();
 				return ret;
 			}
 			else
@@ -397,12 +403,15 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		
 		if (CURRENT.equals(rid)) {
 			if (MainShell.getInstance().getConnectionCache().getCurrentReservationIds() != null) {
+				MainShell.getInstance().setupProgressCounter(MainShell.getInstance().getConnectionCache().getCurrentReservationIds().size(), "Removing Reservation");
 				for (String rrid: MainShell.getInstance().getConnectionCache().getCurrentReservationIds()) {
+					MainShell.getInstance().advanceCounter();
 					if (!CURRENT.equals(rrid)) {
 						boolean res = actor.removeReservation(new ReservationID(rrid));
 						ret += "Removed reservation " + rrid + " on " + actorName + " with result " + res + "\n";
 					}
 				}
+				MainShell.getInstance().finishCounter();
 				return ret;
 			}
 			else
@@ -424,12 +433,15 @@ public class ManageCommand extends CommandHelper implements ICommand {
 		
 		if (CURRENT.equals(sliceId)) {
 			if (MainShell.getInstance().getConnectionCache().getCurrentSliceIds() != null) {
+				MainShell.getInstance().setupProgressCounter(MainShell.getInstance().getConnectionCache().getCurrentSliceIds().size(), "Removing Slice");
 				for (String sid: MainShell.getInstance().getConnectionCache().getCurrentSliceIds()) {
+					MainShell.getInstance().advanceCounter();
 					if (!CURRENT.equals(sid)) {
 						boolean res = actor.removeSlice(new SliceID(sid));
 						ret += "Removed slice " + sid + " on " + actorName + " with result " + res + "\n";
 					}
 				}
+				MainShell.getInstance().finishCounter();
 				return ret;
 			}
 			else

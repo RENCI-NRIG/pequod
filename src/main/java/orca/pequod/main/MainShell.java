@@ -449,6 +449,45 @@ public class MainShell {
 		return s;
 	}
 	
+	private int maxCounter = 0, currentCounter = 1;
+	private String savePrompt = null;
+	private String counterPrompt = null;
+	
+	public void setupProgressCounter(int mc, String prompt) {
+		savePrompt = console.getPrompt();
+		counterPrompt = prompt;
+		maxCounter = mc;
+	}
+	
+	/**
+	 * Call to print the next counter value
+	 */
+	public void advanceCounter() {
+		try {
+			console.resetPromptLine(counterPrompt + " ", currentCounter++ + "/" + maxCounter, -1);
+		} catch(IOException ioe) {
+			;
+		}
+	}
+	
+	/**
+	 * Call to finish printing counters
+	 */
+	public void finishCounter() {
+		try {			
+			console.resetPromptLine("", "", -1);
+			console.setPrompt(savePrompt);
+		} catch(IOException ioe) {
+			;
+		} finally {
+			counterPrompt = null;
+			savePrompt = null;
+			maxCounter = 0;
+			currentCounter = 1;
+		}
+		
+	}
+	
 	public ConnectionCache getConnectionCache() {
 		return cc;
 	}
