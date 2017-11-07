@@ -9,6 +9,12 @@
 	<properties>
                 <maven.build.timestamp.format>MM/dd/yyyy HH:mm</maven.build.timestamp.format>
                 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<orca.repository.id>geni-orca-libs</orca.repository.id>
+		<orca.snap.repository.id>geni-orca-snapshot</orca.snap.repository.id>
+		<orca.rel.repository.id>geni-orca-release</orca.rel.repository.id>
+		<orca.repository.url>http://ci-dev.renci.org/nexus/content/repositories/geni-orca-libs</orca.repository.url>
+		<orca.snap.repository.url>http://ci-dev.renci.org/nexus/content/repositories/geni-orca-snapshot/</orca.snap.repository.url>
+		<orca.rel.repository.url>http://ci-dev.renci.org/nexus/content/repositories/geni-orca-release/</orca.rel.repository.url>
         </properties>
 	<url>http://geni-images.renci.org/webstart/pequod</url>
 	<issueManagement>
@@ -24,6 +30,34 @@
 		<name>RENCI, The University of North Carolina at Chapel Hill</name>
 		<url>http://www.renci.org</url>
 	</organization>
+	<repositories>
+		<!-- Orca main repository -->
+		<repository>
+			<id>${orca.repository.id}</id>
+			<name>Orca Project Maven Repository</name>
+			<url>http://ci-dev.renci.org/nexus/content/repositories/geni-orca-libs</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<!-- ORCA snapshots -->
+		<repository>
+			<id>${orca.snap.repository.id}</id>
+			<url>${orca.snap.repository.url}</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+		<!-- ORCA releases -->
+		<repository>
+			<id>${orca.rel.repository.id}</id>
+			<url>${orca.rel.repository.url}</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 	<build>
 		<plugins>
         	<plugin>
@@ -31,8 +65,8 @@
 				<artifactId>maven-compiler-plugin</artifactId> 
 				<version>2.0.2</version>
 				<configuration>
-					<source>1.6</source>
-                    			<target>1.6</target>
+					<source>1.7</source>
+					<target>1.7</target>
 				</configuration>
 			</plugin>
 			<plugin>

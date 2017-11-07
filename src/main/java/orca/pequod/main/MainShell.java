@@ -31,7 +31,7 @@ import orca.pequod.util.PropertyLoader;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import edu.emory.mathcs.backport.java.util.Collections;
+import java.util.Collections;
 
 /**
  * Pequod is a shell environment for controlling ORCA actors

@@ -55,7 +55,7 @@ import orca.util.ResourceType;
 
 import org.apache.commons.lang.text.StrSubstitutor;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
+import java.util.Arrays;
 
 public class ShowCommand extends CommandHelper implements ICommand {
 	private static final String FILTER_VAL = "val";
